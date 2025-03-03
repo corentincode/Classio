@@ -22,8 +22,15 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import {auth} from "@/lib/auth";
+import {redirect} from "next/navigation";
+
+
+// const session = await auth()
+// if (!session) redirect("/sign-up")
 
 export default function HomePage() {
+
   return (
     <div className="min-h-screen bg-[#fdf2e3]">
       <div className="w-full">
