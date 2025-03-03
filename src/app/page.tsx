@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -13,24 +12,33 @@ import {
   MessageSquare,
   Settings,
   User,
-  School,
   Bell,
   BarChart,
   Folder,
+  Rocket,
+  Target,
+  GraduationCap,
+  Heart,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fdf2e3]">
       <div className="w-full">
-        <div className="overflow-hidden bg-white">
+        <div className="overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
             {/* Sidebar */}
-            <div className="border-r p-6">
+            <div className="border-r border-[#921600]/10 bg-white/50 p-6 backdrop-blur-sm">
               <div className="flex items-center gap-2 pb-6">
-                <School className="h-8 w-8" />
-                <h1 className="text-2xl font-bold">Classio</h1>
+                <Image
+                  src="/image.png"
+                  alt="Classio Logo"
+                  width={120}
+                  height={40}
+                  className="h-auto w-auto"
+                />
               </div>
 
               <nav className="space-y-1">
@@ -49,10 +57,21 @@ export default function HomePage() {
             </div>
 
             {/* Main Content */}
-            <div className="p-0">
+            <div className="relative">
+              {/* Decorative elements */}
+              <div className="absolute right-10 top-10 text-[#921600]/10">
+                <Rocket className="h-32 w-32 -rotate-12 transform" />
+              </div>
+              <div className="absolute bottom-10 left-10 text-[#921600]/10">
+                <Target className="h-24 w-24 rotate-12 transform" />
+              </div>
+
               {/* Header */}
-              <header className="flex items-center justify-between border-b p-6">
-                <h2 className="text-xl font-bold">#CLASSIO PROJET</h2>
+              <header className="flex items-center justify-between border-b border-[#921600]/10 bg-white/50 p-6 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-8 w-8 text-[#921600]" />
+                  <h2 className="text-xl font-bold text-[#921600]">Bienvenue sur Classio</h2>
+                </div>
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
@@ -62,90 +81,72 @@ export default function HomePage() {
               </header>
 
               {/* Project Overview */}
-              <div className="p-6">
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium">Présentation du projet</h3>
-                  <p className="mt-2 text-gray-600">
+              <div className="p-8">
+                <div className="mb-12 text-center">
+                  <h1 className="mb-4 text-4xl font-bold text-[#921600]">
+                    La plateforme qui simplifie{" "}
+                    <span className="relative">
+                      l'éducation
+                      <div className="absolute -right-8 top-0">
+                        <Heart className="h-6 w-6 text-[#921600]" />
+                      </div>
+                    </span>
+                  </h1>
+                  <p className="mx-auto max-w-2xl text-lg text-gray-600">
                     Classio a été conçue dans le but de centraliser la gestion des formations et des interactions entre
                     élèves et professeurs.
                   </p>
                 </div>
 
-                {/* Objectives */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium">Objectifs</h3>
-                  <ul className="mt-2 list-inside space-y-1 text-gray-600">
-                    <li>• Offrir une plateforme intuitive permettant la gestion des formations.</li>
-                    <li>• Faciliter la communication entre élèves et enseignants.</li>
-                    <li>• Centraliser les ressources pédagogiques et administratives.</li>
-                  </ul>
-                </div>
-
                 {/* Stats Cards */}
-                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                   <StatsCard title="Utilisateurs" value="1,250" subtitle="Élèves et professeurs" />
                   <StatsCard title="Cours" value="48" subtitle="Formations actives" />
                   <StatsCard title="Documents" value="320" subtitle="Ressources partagées" />
                   <StatsCard title="Messages" value="1,840" subtitle="Échanges cette semaine" />
                 </div>
 
-                {/* Stakeholders */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-medium">Parties prenantes</h3>
-                  <p className="mt-2 text-gray-600">
-                    <strong>Public cible :</strong> Le projet est adapté à tout type de structure éducative, allant des
-                    écoles primaires jusqu'à l'enseignement supérieur.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium">Élèves</h4>
-                        <p className="text-sm text-gray-600">
-                          Accès aux cours, emploi du temps, documents, discussions avec les professeurs.
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium">Parents</h4>
-                        <p className="text-sm text-gray-600">Accès aux cours, emploi du temps, documents.</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium">Professeurs</h4>
-                        <p className="text-sm text-gray-600">
-                          Gestion des cours, gestion des absences, échanges avec les élèves, suivi des notes.
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium">Administrateurs</h4>
-                        <p className="text-sm text-gray-600">
-                          Gestion des utilisateurs, des formations et des paramètres de la plateforme.
-                        </p>
-                      </CardContent>
-                    </Card>
+                {/* Features Grid */}
+                <div className="mb-12">
+                  <h3 className="mb-8 text-center text-2xl font-bold text-[#921600]">Fonctionnalités principales</h3>
+                  <div className="grid gap-8 md:grid-cols-2">
+                    <FeatureCard
+                      icon={<Users className="h-8 w-8" />}
+                      title="Gestion des utilisateurs"
+                      description="Gérez facilement les élèves, professeurs et administrateurs"
+                    />
+                    <FeatureCard
+                      icon={<BookOpen className="h-8 w-8" />}
+                      title="Ressources pédagogiques"
+                      description="Centralisez tous vos documents et supports de cours"
+                    />
+                    <FeatureCard
+                      icon={<MessageSquare className="h-8 w-8" />}
+                      title="Communication"
+                      description="Facilitez les échanges entre élèves et professeurs"
+                    />
+                    <FeatureCard
+                      icon={<BarChart className="h-8 w-8" />}
+                      title="Suivi et analyses"
+                      description="Visualisez la progression et les performances"
+                    />
                   </div>
                 </div>
 
                 {/* Technologies */}
                 <div>
-                  <h3 className="text-lg font-medium">Technologies et outils utilisés</h3>
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    <TechCard emoji="🗂️" title="Gestion des tâches" value="Notion" />
-                    <TechCard emoji="💬" title="Communication" value="Discord" />
-                    <TechCard emoji="📝" title="Documentation" value="Notion" />
-                    <TechCard emoji="🌐" title="Front-End" value="Next.js & Tailwind" />
-                    <TechCard emoji="🛠️" title="Back-End" value="Node.js" />
-                    <TechCard emoji="🗄️" title="Base de Données" value="Prisma & Neon (PostgreSQL)" />
-                    <TechCard emoji="🔐" title="Authentification" value="NextAuth" />
-                    <TechCard emoji="🔄" title="Gestion de versions" value="Git avec GitHub" />
-                    <TechCard emoji="📨" title="Real Time Chat" value="..." />
-                    <TechCard emoji="🚀" title="Déploiement" value="..." />
-                    <TechCard emoji="🧪" title="Tests" value="..." />
+                  <h3 className="mb-8 text-center text-2xl font-bold text-[#921600]">Technologies utilisées</h3>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    <TechPill emoji="🗂️" label="Notion" />
+                    <TechPill emoji="💬" label="Discord" />
+                    <TechPill emoji="🌐" label="Next.js" />
+                    <TechPill emoji="🎨" label="Tailwind" />
+                    <TechPill emoji="🛠️" label="Node.js" />
+                    <TechPill emoji="🗄️" label="Prisma" />
+                    <TechPill emoji="🔐" label="NextAuth" />
+                    <TechPill emoji="🔄" label="GitHub" />
+                    <TechPill emoji="📨" label="..." />
+                    <TechPill emoji="🚀" label="..." />
                   </div>
                 </div>
               </div>
@@ -159,8 +160,11 @@ export default function HomePage() {
 
 function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <Link href="#" className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100">
-      {icon}
+    <Link
+      href="#"
+      className="group flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 transition-all hover:bg-[#921600] hover:text-white"
+    >
+      <span className="transition-transform group-hover:scale-110">{icon}</span>
       <span>{label}</span>
     </Link>
   )
@@ -168,27 +172,36 @@ function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 function StatsCard({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
   return (
-    <Card>
+    <Card className="group border-[#921600]/10 transition-all hover:scale-105 hover:border-[#921600]/30 hover:shadow-lg">
       <CardContent className="p-6">
-        <h4 className="text-sm font-medium text-gray-500">{title}</h4>
-        <p className="mt-2 text-3xl font-bold">{value}</p>
+        <h4 className="text-sm font-medium text-[#921600]">{title}</h4>
+        <p className="mt-2 text-3xl font-bold text-gray-800">{value}</p>
         <p className="text-sm text-gray-500">{subtitle}</p>
       </CardContent>
     </Card>
   )
 }
 
-function TechCard({ emoji, title, value }: { emoji: string; title: string; value: string }) {
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <Card>
-      <CardContent className="flex items-start gap-3 p-4">
-        <div className="text-2xl">{emoji}</div>
-        <div>
-          <h4 className="text-sm font-medium text-gray-500">{title}</h4>
-          <p className="font-medium">{value}</p>
+    <Card className="group overflow-hidden border-[#921600]/10">
+      <CardContent className="p-6">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#921600]/10 text-[#921600] transition-all group-hover:scale-110 group-hover:bg-[#921600] group-hover:text-white">
+          {icon}
         </div>
+        <h4 className="mb-2 text-lg font-semibold text-[#921600]">{title}</h4>
+        <p className="text-gray-600">{description}</p>
       </CardContent>
     </Card>
+  )
+}
+
+function TechPill({ emoji, label }: { emoji: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-[#921600]/10 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:scale-105 hover:border-[#921600]/30 hover:shadow-md">
+      <span>{emoji}</span>
+      <span>{label}</span>
+    </div>
   )
 }
 
