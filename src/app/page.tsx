@@ -26,8 +26,8 @@ import {auth} from "@/lib/auth";
 import {redirect} from "next/navigation";
 
 
-// const session = await auth()
-// if (!session) redirect("/sign-up")
+const session = await auth()
+if (!session) redirect("/sign-up")
 
 export default function HomePage() {
 
