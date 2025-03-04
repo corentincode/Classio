@@ -1,2 +1,32 @@
 import NextAuth from "next-auth"
-export const { auth, handlers } = NextAuth({ providers: [] })
+import Credentials from 'next-auth/providers/credentials'
+import { redirect } from "next/navigation";
+
+export const { auth, handlers, signIn } = NextAuth({
+    providers: [Credentials({
+        credentials: {
+            email: {},
+            password: {}
+        },
+        authorize : async (credentials) => {
+
+            const email = 'admin@admin.fr'
+            const password = '123'
+
+            if (credentials.email === email && credentials.password === password) {
+
+                return {email, password}
+            } else {
+                throw new Error("invalid credentials")
+            }
+        },
+    })],
+    callbacks: {
+        async redirect({ baseUrl }) {
+            // For example, always go to / on success
+            return baseUrl;
+        },
+        // or handle other logic
+    }
+
+})

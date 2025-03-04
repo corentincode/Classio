@@ -1,14 +1,34 @@
 "use client"
 
-import type React from "react"
+import React, {useEffect, useState} from "react"
 
-import { Input } from "@/components/ui/input"
-import {Card, CardContent} from "@/components/ui/card";
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-
+import FormCard from "@/components/auth/LoginForm";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+    const router = useRouter();
+
+    const [isLoading, setIsLoading] = useState(true)
+    useEffect(() => {
+        // Vérifier l'authentification côté client
+        const checkAuth = async () => {
+            try {
+                const res = await fetch("/api/auth/session")
+                const session = await res.json()
+
+                if (session || session.user) {
+                    console.log("ddsdsddsds")
+                    router.push("/");
+                } else {
+                    setIsLoading(false)
+                }
+            } catch (error) {
+                console.error("Erreur lors de la vérification de l'authentification:", error)
+            }
+        }
+
+        checkAuth()
+    }, [])
 
     return (
         <div className="min-h-screen bg-[#fdf2e3]">
@@ -19,25 +39,4 @@ export default function HomePage() {
     )
 }
 
-function FormCard() {
-    return (
-        <Card className=" flex justify-center items-center group border-[#921600]/10 transition-all ease-in-out duration-350  hover:border-[#921600]/30 hover:shadow-lg">
-            <CardContent className="p-6"  >
-                <h4 className='text-3xl font-bold'>Se connecter</h4>
-                <p className="mt-0 text-gray-500 mb-5">Connecter vous avec votre addesse email Classio </p>
-                <ul className="gap-4 flex flex-col">
-                    <li>
-                        <Label htmlFor="terms" className="mb-3">Email :</Label>
-                        <Input type="email" placeholder="Email" className="w-100"/>
-                    </li>
-                    <li>
-                        <Label htmlFor="terms" className="mb-3">Password :</Label>
-                        <Input type="password" placeholder="Password" className="w-100"/>
-                    </li>
-                </ul>
-                <Button className='mt-4'>Envoyer</Button>
-            </CardContent>
-        </Card>
-    )
-}
 
