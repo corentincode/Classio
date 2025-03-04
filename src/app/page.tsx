@@ -26,10 +26,34 @@ import {auth} from "@/lib/auth";
 import {redirect} from "next/navigation";
 
 
-const session = await auth()
-if (!session) redirect("/sign-up")
+import { useEffect, useState } from "react"
 
 export default function HomePage() {
+  const [isLoading, setIsLoading] = useState(true)
+  useEffect(() => {
+    // Vérifier l'authentification côté client
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/session")
+        const session = await res.json()
+
+        if (!session || !session.user) {
+          redirect("/sign-up")
+        } else {
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'authentification:", error)
+        redirect("/sign-up")
+      }
+    }
+
+    checkAuth()
+  }, [redirect])
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center bg-[#fdf2e3]">Chargement...</div>
+  }
 
   return (
     <div className="min-h-screen bg-[#fdf2e3]">
