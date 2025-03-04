@@ -1,8 +1,8 @@
 import NextAuth from "next-auth"
 import Credentials from 'next-auth/providers/credentials'
-import { redirect } from "next/navigation";
 
 export const { auth, handlers, signIn } = NextAuth({
+    secret: process.env.NEXTAUTH_SECRET,
     providers: [Credentials({
         credentials: {
             email: {},
@@ -17,7 +17,7 @@ export const { auth, handlers, signIn } = NextAuth({
 
                 return {email, password}
             } else {
-                throw new Error("invalid credentials")
+               throw new Error("invalid credentials")
             }
         },
     })],
