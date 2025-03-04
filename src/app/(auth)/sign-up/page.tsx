@@ -20,7 +20,7 @@ export default function HomePage() {
                     console.log("ddsdsddsds")
                     router.push("/");
                 } else {
-                    setIsLoading(false)
+                    router.push("/sign-up");
                 }
             } catch (error) {
                 console.error("Erreur lors de la vérification de l'authentification:", error)
