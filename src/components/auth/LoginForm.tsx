@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react";
-
+import { useRouter } from "next/navigation"
 import {signIn} from "next-auth/react";
 import {Card, CardContent} from "@/components/ui/card";
 import Image from "next/image";
@@ -8,18 +8,38 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import React from "react";
 
-export default function FormCard() {
+export default function LoginForm() {
+    const router = useRouter()
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
 
-    async function handleForm(e: React.FormEvent) {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-         await signIn("credentials", {
-            email,
-            password,
-            redirect: true,
-        });
+        setIsLoading(true)
+        setError(null)
+
+        try {
+            const result = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+            })
+
+            if (result?.error) {
+                setError("Identifiants invalides")
+                setIsLoading(false)
+                return
+            }
+
+            router.push("/")
+            router.refresh()
+        } catch (error) {
+            setError("Une erreur s'est produite lors de la connexion")
+            setIsLoading(false)
+        }
 
     }
 
@@ -36,7 +56,7 @@ export default function FormCard() {
                 />
                 <h4 className='text-3xl font-bold'>Se connecter</h4>
                 <p className="mt-0 text-gray-500 mb-5">Connecter vous avec votre addesse email Classio </p>
-                <form onSubmit={handleForm}>
+                <form onSubmit={handleSubmit}>
                     <Input placeholder='Email' type='email' name='email'onChange={(e) => setEmail(e.target.value)}
                            value={email}/>
                     <Input placeholder='Password' type='password' name='password' onChange={(e) => setPassword(e.target.value)}
