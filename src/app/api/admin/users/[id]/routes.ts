@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authConfig } from "@/lib/auth"
+import { auth } from "@/lib/auth"; // Importez auth au lieu de getServerSession
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
         // Vérifier si l'utilisateur est un administrateur
-        const session = await getServerSession(authConfig)
+        const session = await auth()
 
         if (!session || session.user.role !== "ADMIN") {
             return NextResponse.json({ message: "Non autorisé" }, { status: 403 })
