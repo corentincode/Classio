@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { hash } from "bcrypt"
 import prisma from "@/lib/prisma"
 import { auth } from "@/lib/auth"; // Importez auth au lieu de getServerSession
-import { authConfig } from "@/lib/auth"
 
 export async function POST(request: Request) {
     try {
