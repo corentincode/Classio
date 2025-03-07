@@ -10,6 +10,7 @@
     "create-admin": "tsx ./src/scripts/create-admin.ts"
   },
   "dependencies": {
+    "@auth/core": "^0.38.0",
     "@auth/prisma-adapter": "^2.8.0",
     "@prisma/client": "^6.4.1",
     "@radix-ui/react-avatar": "^1.1.3",
