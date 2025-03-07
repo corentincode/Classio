@@ -3,6 +3,7 @@
 import type React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
+import { signOut } from "next-auth/react";
 import {
   BookOpen,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   Target,
   GraduationCap,
   Heart,
+  LogOut
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -83,6 +85,7 @@ export default function HomePage() {
                 <NavItem icon={<BarChart className="h-5 w-5" />} label="Statistiques" />
                 <NavItem icon={<Folder className="h-5 w-5" />} label="Ressources" />
                 <NavItem icon={<Settings className="h-5 w-5" />} label="Paramètres" />
+                <NavItem icon={<LogOut className="h-5 w-5" />} label="Déconnexion"  isLogout />
               </nav>
             </div>
 
@@ -188,7 +191,20 @@ export default function HomePage() {
   )
 }
 
-function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
+function NavItem({ icon, label , isLogout}: { icon: React.ReactNode; label: string, isLogout: boolean }) {
+
+  if (isLogout) {
+    return (
+        <button
+            onClick={() => signOut({ callbackUrl: "/sign-up" })}
+            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-gray-700 transition-all hover:bg-[#921600] hover:text-white"
+        >
+          {icon}
+          <span>{label}</span>
+        </button>
+    )
+  }
+
   return (
     <Link
       href="#"
