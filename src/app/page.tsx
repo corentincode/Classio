@@ -191,7 +191,7 @@ export default function HomePage() {
   )
 }
 
-function NavItem({ icon, label , isLogout}: { icon: React.ReactNode; label: string, isLogout: boolean }) {
+function NavItem({ icon, label , isLogout = false}: { icon: React.ReactNode; label: string, isLogout: boolean }) {
 
   if (isLogout) {
     return (
