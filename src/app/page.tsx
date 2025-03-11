@@ -2,6 +2,7 @@
 import type React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
+import NavItem from "@/components/ui/navItem"; // 🔥 Import du composant Client
 import {
   BookOpen,
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   Target,
   GraduationCap,
   Heart,
+  LogIn,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -74,6 +76,10 @@ export default async function HomePage() {
                     Classio a été conçue dans le but de centraliser la gestion des formations et des interactions entre
                     élèves et professeurs.
                   </p>
+                  <nav className="w-50 bg-white mx-auto mt-5 rounded-xl ">
+                    <NavItem icon={<LogIn  className="h-5 w-5" />} label="Se Connecter" href="/signin"/>
+
+                  </nav>
                 </div>
 
 
@@ -129,17 +135,7 @@ export default async function HomePage() {
   )
 }
 
-function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      href="#"
-      className="group flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 transition-all hover:bg-[#921600] hover:text-white"
-    >
-      <span className="transition-transform group-hover:scale-110">{icon}</span>
-      <span>{label}</span>
-    </Link>
-  )
-}
+
 
 function StatsCard({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
   return (

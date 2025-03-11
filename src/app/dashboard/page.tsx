@@ -1,6 +1,9 @@
+
 import type React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
+import NavItem from "@/components/ui/navItem"; // 🔥 Import du composant Client
+
 import {
   BookOpen,
   LayoutDashboard,
@@ -17,14 +20,19 @@ import {
   Target,
   GraduationCap,
   Heart,
+  EarthLock,
+  LogOut,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation";
 
 
 export default async function HomePage() {
+  const session = await auth();
+  const ROLE_ADMIN =   '"ADMIN"';
 
   return (
     <div className="min-h-screen bg-[#fdf2e3]">
@@ -44,17 +52,21 @@ export default async function HomePage() {
               </div>
 
               <nav className="space-y-1">
-                <NavItem icon={<LayoutDashboard className="h-5 w-5" />} label="Tableau de bord" />
-                <NavItem icon={<BookOpen className="h-5 w-5" />} label="Cours" />
-                <NavItem icon={<Calendar className="h-5 w-5" />} label="Emploi du temps" />
-                <NavItem icon={<Users className="h-5 w-5" />} label="Élèves" />
-                <NavItem icon={<User className="h-5 w-5" />} label="Professeurs" />
-                <NavItem icon={<FileText className="h-5 w-5" />} label="Documents" />
-                <NavItem icon={<MessageSquare className="h-5 w-5" />} label="Messages" />
-                <NavItem icon={<Bell className="h-5 w-5" />} label="Notifications" />
-                <NavItem icon={<BarChart className="h-5 w-5" />} label="Statistiques" />
-                <NavItem icon={<Folder className="h-5 w-5" />} label="Ressources" />
-                <NavItem icon={<Settings className="h-5 w-5" />} label="Paramètres" />
+                <NavItem icon={<LayoutDashboard className="h-5 w-5" />} label="Tableau de bord" href="/"/>
+                {JSON.stringify(session.user.role) === ROLE_ADMIN && (
+                    <NavItem icon={<EarthLock  className="h-5 w-5" />} label="Admin" href="/admin" />
+                )}
+                <NavItem icon={<BookOpen className="h-5 w-5" />} label="Cours" href="/"/>
+                <NavItem icon={<Calendar className="h-5 w-5" />} label="Emploi du temps" href="/"/>
+                <NavItem icon={<Users className="h-5 w-5" />} label="Élèves" href="/"/>
+                <NavItem icon={<User className="h-5 w-5" />} label="Professeurs" href="/"/>
+                <NavItem icon={<FileText className="h-5 w-5" />} label="Documents" href="/"/>
+                <NavItem icon={<MessageSquare className="h-5 w-5" />} label="Messages" href="/"/>
+                <NavItem icon={<Bell className="h-5 w-5" />} label="Notifications" href="/"/>
+                <NavItem icon={<BarChart className="h-5 w-5" />} label="Statistiques" href="/"/>
+                <NavItem icon={<Folder className="h-5 w-5" />} label="Ressources" href="/"/>
+                <NavItem icon={<Settings className="h-5 w-5" />} label="Paramètres" href="/"/>
+                <NavItem icon={<LogOut className="h-5 w-5" />} label="Se Déconnecter" href="/signout"/>
               </nav>
             </div>
 
@@ -77,7 +89,7 @@ export default async function HomePage() {
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                    <AvatarFallback>UN</AvatarFallback>
+                    <AvatarFallback>{session.user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </div>
               </header>
@@ -160,17 +172,6 @@ export default async function HomePage() {
   )
 }
 
-function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      href="#"
-      className="group flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 transition-all hover:bg-[#921600] hover:text-white"
-    >
-      <span className="transition-transform group-hover:scale-110">{icon}</span>
-      <span>{label}</span>
-    </Link>
-  )
-}
 
 function StatsCard({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
   return (

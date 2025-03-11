@@ -25,6 +25,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                     // Find user in database
                     const user = await prisma.user.findUnique({
                         where: { email },
+                        select: { id: true, email: true, name: true, password: true, role: true, image: true },
                     })
 
                     // If no user found or password doesn't match
@@ -60,15 +61,19 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.id = user.id
+                token.role = user.role;
+                token.id = user.id;
+                console.log("User JWT callback", { user }); // <-- vérification
             }
-            return token
+            return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                session.user.id = token.id as string
+                session.user.id = token.id;
+                session.user.role = token.role;
+                console.log("Session callback", { session }); // <-- vérification
             }
-            return session
+            return session;
         },
     },
     pages: {
