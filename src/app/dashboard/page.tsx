@@ -1,4 +1,3 @@
-
 import type React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,12 +20,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import {auth} from "@/lib/auth";
-import {redirect} from "next/navigation";
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
-
-const session = await auth()
-if (!session) redirect("/sign-in")
 
 export default async function HomePage() {
 
@@ -34,8 +30,33 @@ export default async function HomePage() {
     <div className="min-h-screen bg-[#fdf2e3]">
       <div className="w-full">
         <div className="overflow-hidden">
-          <div className="grid grid-cols-1 ">
+          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
+            {/* Sidebar */}
+            <div className="border-r border-[#921600]/10 bg-white/50 p-6 backdrop-blur-sm">
+              <div className="flex items-center gap-2 pb-6">
+                <Image
+                  src="/image.png"
+                  alt="Classio Logo"
+                  width={120}
+                  height={40}
+                  className="h-auto w-auto"
+                />
+              </div>
 
+              <nav className="space-y-1">
+                <NavItem icon={<LayoutDashboard className="h-5 w-5" />} label="Tableau de bord" />
+                <NavItem icon={<BookOpen className="h-5 w-5" />} label="Cours" />
+                <NavItem icon={<Calendar className="h-5 w-5" />} label="Emploi du temps" />
+                <NavItem icon={<Users className="h-5 w-5" />} label="Élèves" />
+                <NavItem icon={<User className="h-5 w-5" />} label="Professeurs" />
+                <NavItem icon={<FileText className="h-5 w-5" />} label="Documents" />
+                <NavItem icon={<MessageSquare className="h-5 w-5" />} label="Messages" />
+                <NavItem icon={<Bell className="h-5 w-5" />} label="Notifications" />
+                <NavItem icon={<BarChart className="h-5 w-5" />} label="Statistiques" />
+                <NavItem icon={<Folder className="h-5 w-5" />} label="Ressources" />
+                <NavItem icon={<Settings className="h-5 w-5" />} label="Paramètres" />
+              </nav>
+            </div>
 
             {/* Main Content */}
             <div className="relative">
@@ -44,7 +65,7 @@ export default async function HomePage() {
                 <Rocket className="h-32 w-32 -rotate-12 transform" />
               </div>
               <div className="absolute bottom-10 left-10 text-[#921600]/10">
-                <Target className="h-24 w-24 rotate-12 transform"  />
+                <Target className="h-24 w-24 rotate-12 transform" />
               </div>
 
               {/* Header */}
@@ -79,6 +100,13 @@ export default async function HomePage() {
                   </p>
                 </div>
 
+                {/* Stats Cards */}
+                <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                  <StatsCard title="Utilisateurs" value="1,250" subtitle="Élèves et professeurs" />
+                  <StatsCard title="Cours" value="48" subtitle="Formations actives" />
+                  <StatsCard title="Documents" value="320" subtitle="Ressources partagées" />
+                  <StatsCard title="Messages" value="1,840" subtitle="Échanges cette semaine" />
+                </div>
 
                 {/* Features Grid */}
                 <div className="mb-12">
