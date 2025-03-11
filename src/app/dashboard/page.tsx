@@ -53,7 +53,7 @@ export default async function HomePage() {
 
               <nav className="space-y-1">
                 <NavItem icon={<LayoutDashboard className="h-5 w-5" />} label="Tableau de bord" href="/"/>
-                {JSON.stringify(session.user.role) === ROLE_ADMIN && (
+                {JSON.stringify(session?.user?.role) === ROLE_ADMIN && (
                     <NavItem icon={<EarthLock  className="h-5 w-5" />} label="Admin" href="/admin" />
                 )}
                 <NavItem icon={<BookOpen className="h-5 w-5" />} label="Cours" href="/"/>
@@ -89,7 +89,7 @@ export default async function HomePage() {
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                    <AvatarFallback>{session.user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{session?.user?.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </div>
               </header>
