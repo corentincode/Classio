@@ -226,7 +226,7 @@ export default function DashboardSidebar() {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
                   <AvatarFallback className="bg-[#c83e3e]/20 text-[#c83e3e]">
-                    {session.user.name.slice(0, 2).toUpperCase()}
+                    {session?.user?.name?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
