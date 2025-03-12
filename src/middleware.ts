@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
-
+import { Role } from "@prisma/client"
 export default async function middleware(req: NextRequest) {
     const session = await auth()
     const { pathname } = req.nextUrl
@@ -29,18 +29,7 @@ export default async function middleware(req: NextRequest) {
             return NextResponse.redirect(url)
         }
 
-        // Si l'utilisateur est connecté, vérifier s'il appartient à cet établissement
-        // if (session && session.user && session.user.etablissementId) {
-        //     const etablissement = await prisma.etablissement.findUnique({
-        //         where: { sousDomaine },
-        //         select: { id: true },
-        //     })
-        //
-        //     // Si l'établissement existe et que l'utilisateur n'y appartient pas, rediriger vers la page d'accueil
-        //     if (etablissement && etablissement.id !== session.user.etablissementId && !isPublicRoute) {
-        //         return NextResponse.redirect(new URL("/", req.url))
-        //     }
-        // }
+
 
 
         return NextResponse.next({

@@ -17,6 +17,7 @@ import {
   Settings,
   User,
   Users,
+  EarthLock
 } from "lucide-react"
 import {
   Sidebar,
@@ -34,7 +35,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {auth} from "@/lib/auth";
 import { useSession } from "next-auth/react";
-
+import {Role} from "@prisma/client"
 export default function DashboardSidebar() {
   const { data: session } = useSession(); // 🔥 Récupère la session utilisateur
 
@@ -202,6 +203,17 @@ export default function DashboardSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {session?.user?.role === Role.SUPER_ADMIN && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/admin")}>
+                  <Link href="/dashboard/admin">
+                    <EarthLock className="h-4 w-4" />
+                    <span>Super Admin</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+          )}
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/dashboard/profile")}>

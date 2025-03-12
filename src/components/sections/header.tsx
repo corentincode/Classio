@@ -71,7 +71,7 @@ export default function Header() {
         </nav>
         <div className="flex items-center gap-4">
           <Link
-            href="/login"
+            href="/sign-in"
             className="text-sm font-medium hover:text-[#c83e3e] transition-colors hidden sm:inline-flex"
           >
             Connexion
