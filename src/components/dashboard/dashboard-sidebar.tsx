@@ -32,8 +32,14 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {auth} from "@/lib/auth";
+import { useSession } from "next-auth/react";
 
 export default function DashboardSidebar() {
+  const { data: session } = useSession(); // 🔥 Récupère la session utilisateur
+
+
+
   const pathname = usePathname()
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     classes: true,
@@ -214,18 +220,24 @@ export default function DashboardSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="px-3 py-2 mt-2">
-          <div className="flex items-center gap-3 rounded-lg border border-[#f5f0e8] p-2 bg-white">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
-              <AvatarFallback className="bg-[#c83e3e]/20 text-[#c83e3e]">JD</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">Jean Dupont</span>
-              <span className="text-xs text-gray-500">Administrateur</span>
+        {session && (
+            <div className="px-3 py-2 mt-2">
+              <div className="flex items-center gap-3 rounded-lg border border-[#f5f0e8] p-2 bg-white">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
+                  <AvatarFallback className="bg-[#c83e3e]/20 text-[#c83e3e]">
+                    {session.user.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{session.user.name}</span>
+                  <span className="text-xs text-gray-500">
+                  {session.user.role}
+                </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   )

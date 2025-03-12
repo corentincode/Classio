@@ -11,17 +11,15 @@ export const metadata = {
     "Classio réunit Pronote, Edusign et Teams en une seule application intuitive et puissante pour simplifier la gestion de votre établissement.",
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  return (
-    <html lang="fr">
-      <body className={inter.className}>
-        <PageTransition>{children}</PageTransition>
-      </body>
-    </html>
-  )
+import AuthProvider from "@/app/providers/SessionProvider";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <html lang="fr">
+        <body>
+        <AuthProvider>{children}</AuthProvider>
+        </body>
+        </html>
+    );
 }
 
