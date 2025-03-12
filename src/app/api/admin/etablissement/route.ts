@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { z } from "zod"
+import { Role } from '@prisma/client'
 
 const etablissementSchema = z.object({
     nom: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
         const session = await auth()
 
         // Vérifier si l'utilisateur est un SUPER_ADMIN
-        if (!session?.user?.role || session.user.role !== "SUPER_ADMIN") {
+        if (!session?.user?.role || session.user.role !== Role.SUPER_ADMIN) {
             return NextResponse.json(
                 { message: "Non autorisé. Seuls les super administrateurs peuvent créer des établissements." },
                 { status: 403 },

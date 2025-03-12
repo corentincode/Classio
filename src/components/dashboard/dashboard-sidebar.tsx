@@ -17,7 +17,8 @@ import {
   Settings,
   User,
   Users,
-  EarthLock
+  EarthLock,
+  School
 } from "lucide-react"
 import {
   Sidebar,
@@ -80,6 +81,16 @@ export default function DashboardSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
+          {session?.user?.role === Role.SUPER_ADMIN && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/admin/etablissements")}>
+                  <Link href="/dashboard/admin/etablissements">
+                    <School className="h-4 w-4" />
+                    <span>Etablissements</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/dashboard/calendar")}>
               <Link href="/dashboard/calendar">
