@@ -41,10 +41,6 @@ export default async function middleware(req: NextRequest) {
         //         return NextResponse.redirect(new URL("/", req.url))
         //     }
         // }
-        const etablissement = await prisma.etablissement.findUnique({
-            where: { sousDomaine },
-            select: { id: true },
-        })
 
 
         return NextResponse.next({
