@@ -8,9 +8,20 @@ export default auth((req) => {
     const isLoggedIn = !!req.auth;
     const isSignInPage = nextUrl.pathname === '/sign-in';
     const isHomePage = nextUrl.pathname === '/';
+    const isAboutPage = nextUrl.pathname === '/a-propos';
+    const isContactPage = nextUrl.pathname === '/contact';
+    const isRessourcesPage = nextUrl.pathname === '/ressources';
+    const isTarificationPage = nextUrl.pathname === '/tarification';
+    const isMentionsLegalesPage = nextUrl.pathname === '/mentions-legales';
+    const isDocumentationPage = nextUrl.pathname === '/documentation';
+    const isAvantagesPage = nextUrl.pathname === '/avantages';
+    const isDashboardPage = nextUrl.pathname === '/dashboard';
+    const isCalendarPage = nextUrl.pathname === '/dashboard/calendar';
+
+
 
     // Autoriser explicitement les routes non protégées
-    if (isSignInPage || isHomePage) {
+    if (isSignInPage || isHomePage || isAboutPage || isContactPage || isRessourcesPage || isTarificationPage || isMentionsLegalesPage || isDocumentationPage || isAvantagesPage || isDashboardPage || isCalendarPage) {
         return NextResponse.next();
     }
 
