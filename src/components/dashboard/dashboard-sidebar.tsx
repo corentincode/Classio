@@ -207,7 +207,7 @@ export default function DashboardSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => signOut({ callbackUrl: "/" })}>
+            <SidebarMenuButton onClick={() => signOut({ callbackUrl: "/signout" })}>
               <LogOut className="h-4 w-4" />
               <span>Déconnexion</span>
             </SidebarMenuButton>
