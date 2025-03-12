@@ -36,11 +36,13 @@ export default function LoginForm() {
     setError(null)
 
     try {
+
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       })
+      console.log(result)
 
       if (result?.error) {
         setError("Identifiants invalides. Veuillez vérifier votre email et mot de passe.")
@@ -158,6 +160,8 @@ export default function LoginForm() {
         </CardContent>
       </Card>
     </motion.div>
+
+
   )
 }
 

@@ -38,15 +38,17 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String? // Add this field for storing hashed passwords
-  role          Role      @default(USER)
-  accounts      Account[]
-  sessions      Session[]
+  id              String         @id @default(cuid())
+  name            String?
+  email           String?        @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String? // Add this field for storing hashed passwords
+  role            Role           @default(ELEVE)
+  accounts        Account[]
+  sessions        Session[]
+  Etablissement   Etablissement? @relation(fields: [etablissementId], references: [id])
+  etablissementId String?
 }
 
 model VerificationToken {
@@ -58,7 +60,15 @@ model VerificationToken {
 }
 
 enum Role {
-  USER
+  SUPER_ADMIN
   ADMIN
-  MODERATOR
+  PROF
+  ELEVE
+}
+
+model Etablissement {
+  id          String @id @default(uuid())
+  nom         String @unique
+  sousDomaine String @unique
+  users       User[]
 }
