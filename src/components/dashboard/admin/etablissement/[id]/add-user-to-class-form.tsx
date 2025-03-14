@@ -29,7 +29,7 @@ const addUserToClasseSchema = z
         email: z.string().email("Veuillez entrer une adresse email valide").optional(),
         firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères").optional(),
         name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").optional(),
-        password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
+        password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères" }),
         roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"], {
             required_error: "Veuillez sélectionner un rôle",
         }),
@@ -151,12 +151,9 @@ export function AddUserToClasseForm({
         setError(null)
 
         try {
-            let userId = values.userId
-
-            // Si on crée un nouvel utilisateur
-            if (values.createNewUser) {
-                // Créer l'utilisateur d'abord
-                const createUserResponse = await fetch(`/api/admin/etablissement/${etablissementId}/user`, {
+            if (createNewUser) {
+                // Créer un nouvel utilisateur et l'associer directement à la classe
+                const response = await fetch(`/api/admin/etablissement/${etablissementId}/user`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -167,51 +164,61 @@ export function AddUserToClasseForm({
                         name: values.name,
                         password: values.password,
                         role: values.roleInClass === "PROF" ? "PROF" : "ELEVE", // Définir le rôle global en fonction du rôle dans la classe
+                        classeId: classeId,
+                        roleInClass: values.roleInClass,
                     }),
                 })
 
-                if (!createUserResponse.ok) {
-                    const errorData = await createUserResponse.json()
-                    setError(errorData.message || "Erreur lors de la création de l'utilisateur")
-                    setIsLoading(false)
+                const data = await response.json()
+
+                if (!response.ok) {
+                    setError(data.message || "Une erreur est survenue lors de la création de l'utilisateur")
                     return
                 }
 
-                const newUser = await createUserResponse.json()
-                userId = newUser.id
-            }
+                // Réinitialiser le formulaire
+                form.reset()
+                setCreateNewUser(false)
 
-            // Ajouter l'utilisateur à la classe
-            const response = await fetch(`/api/admin/classes/users`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    userId,
-                    roleInClass: values.roleInClass,
-                    etablissementId,
-                    classeId,
-                }),
-            })
+                // Fermer le dialogue
+                onOpenChange(false)
 
-            const data = await response.json()
+                // Rafraîchir les données
+                if (onSuccess) {
+                    onSuccess()
+                }
+            } else {
+                // Ajouter un utilisateur existant à la classe
+                const response = await fetch(`/api/admin/classes/users`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        userId: values.userId,
+                        roleInClass: values.roleInClass,
+                        etablissementId,
+                        classeId,
+                    }),
+                })
 
-            if (!response.ok) {
-                setError(data.message || "Une erreur est survenue lors de l'ajout de l'utilisateur à la classe")
-                return
-            }
+                const data = await response.json()
 
-            // Réinitialiser le formulaire
-            form.reset()
-            setCreateNewUser(false)
+                if (!response.ok) {
+                    setError(data.message || "Une erreur est survenue lors de l'ajout de l'utilisateur à la classe")
+                    return
+                }
 
-            // Fermer le dialogue
-            onOpenChange(false)
+                // Réinitialiser le formulaire
+                form.reset()
 
-            // Rafraîchir les données
-            if (onSuccess) {
-                onSuccess()
+                // Fermer le dialogue
+                onOpenChange(false)
+
+                // Rafraîchir les données
+                if (onSuccess) {
+                    onSuccess()
+                }
             }
         } catch (error) {
             setError("Une erreur est survenue. Veuillez réessayer.")

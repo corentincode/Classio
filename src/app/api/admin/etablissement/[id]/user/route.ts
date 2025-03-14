@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import {auth} from "@/lib/auth";
+import type { ClasseRole } from "@prisma/client"
 
 // Schéma de validation pour la création d'un utilisateur
 const createUserSchema = z.object({
@@ -10,6 +11,8 @@ const createUserSchema = z.object({
     firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
     name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     role: z.enum(["SUPER_ADMIN", "ADMIN", "PROF", "ELEVE"]).default("ELEVE"),
+    classeId: z.string().optional(),
+    roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"]).optional(),
     password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional(),
 })
 
@@ -168,7 +171,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             firstName: validatedData.firstName,
             name: validatedData.name,
             password: hashedPassword,
-
             role: validatedData.role,
             etablissementId,
         }
@@ -191,6 +193,25 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
                 etablissementId: true,
             },
         })
+        // Si classeId est fourni, créer l'association avec la classe
+        let classeUser = null
+        if (validatedData.classeId && validatedData.roleInClass) {
+            classeUser = await prisma.classeUser.create({
+                data: {
+                    userId: user.id,
+                    classeId: validatedData.classeId,
+                    roleInClass: validatedData.roleInClass as ClasseRole,
+                },
+                include: {
+                    classe: {
+                        select: {
+                            id: true,
+                            nom: true,
+                        },
+                    },
+                },
+            })
+        }
 
         console.log("🟢 Utilisateur créé avec succès :", user)
         return NextResponse.json({ message: "Utilisateur créé avec succès", user }, { status: 201 })
