@@ -39,16 +39,20 @@ model Session {
 
 model User {
   id              String         @id @default(cuid())
+  firstName       String?
   name            String?
   email           String?        @unique
   emailVerified   DateTime?
   image           String?
-  password        String? // Add this field for storing hashed passwords
+  password        String?
   role            Role           @default(ELEVE)
   accounts        Account[]
   sessions        Session[]
   Etablissement   Etablissement? @relation(fields: [etablissementId], references: [id])
   etablissementId String?
+  // Lien vers les classes auxquelles l'utilisateur est associé
+  classeUsers     ClasseUser[]
+  Cours           Cours[]
 }
 
 model VerificationToken {
@@ -67,8 +71,57 @@ enum Role {
 }
 
 model Etablissement {
-  id          String @id @default(uuid())
-  nom         String @unique
-  sousDomaine String @unique
+  id          String   @id @default(uuid())
+  nom         String   @unique
+  sousDomaine String   @unique
   users       User[]
+  classes     Classe[]
+}
+
+model Classe {
+  id              String        @id @default(uuid())
+  nom             String
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id])
+  // Lien vers les utilisateurs associés à la classe via le pivot
+  classeUsers     ClasseUser[]
+  // Lien vers les cours (sections) de la classe
+  cours           Cours[]
+}
+
+model ClasseUser {
+  id          String     @id @default(uuid())
+  classeId    String
+  userId      String
+  // Rôle spécifique dans le contexte de la classe
+  roleInClass ClasseRole
+  classe      Classe     @relation(fields: [classeId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@unique([classeId, userId])
+}
+
+enum ClasseRole {
+  ELEVE
+  PROF
+  SURVEILLANT
+  SECRETAIRE
+}
+
+model Matiere {
+  id    String  @id @default(uuid())
+  nom   String
+  // Lien vers les cours dans lesquels cette matière est enseignée
+  cours Cours[]
+}
+
+model Cours {
+  id        String  @id @default(uuid())
+  classeId  String
+  matiereId String
+  teacherId String? // Optionnel, référence à un utilisateur (PROF) qui enseigne ce cours
+
+  classe  Classe  @relation(fields: [classeId], references: [id])
+  matiere Matiere @relation(fields: [matiereId], references: [id])
+  teacher User?   @relation(fields: [teacherId], references: [id])
 }

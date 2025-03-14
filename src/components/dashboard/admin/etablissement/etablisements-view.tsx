@@ -43,14 +43,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import {useSession} from "next-auth/react";
 import {useRouter} from "next/navigation";
+import Link from "next/link";
 
 
-interface Etablissement {
-    id: string;
-    nom: string;
-    sousDomaine: string;
-    users?: { id: string }[]; // Vérifie que `users` est un tableau d'objets contenant `id`
+type Etablissement = {
+    id: string
+    nom: string
+    sousDomaine: string
+    classes: Classe[]
+    users: User[]
 }
+
 
 
 const etablissementSchema = z.object({
@@ -237,9 +240,11 @@ export default function EtablissementsView() {
                                                     <h2 className="text-lg font-bold text-[#c83e3e]">{etablissement.nom}</h2>
                                                     <p className="text-gray-600">Sous-domaine: {etablissement.sousDomaine}</p>
                                                     <p className="text-gray-500">Utilisateurs: {etablissement.users?.length ?? 0}</p>
-                                                    <Button
-                                                        className="mt-4 bg-[#c83e3e] hover:bg-[#b53535] text-white w-full">
-                                                        Voir plus
+                                                    <Button className="mt-4 bg-[#c83e3e] hover:bg-[#b53535] text-white w-full">
+                                                        <Link href={`/dashboard/admin/etablissements/${etablissement.id}`}>
+                                                            Voir plus
+                                                        </Link>
+
                                                     </Button>
                                                 </CardContent>
                                             </Card>

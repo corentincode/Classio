@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import {useSession} from "next-auth/react";
 import {useRouter} from "next/navigation";
+import Link from "next/link";
 
 // Animations
 const fadeIn = {
@@ -366,7 +367,9 @@ export default function DashboardAdminContent() {
                                 <p className="text-gray-600">Sous-domaine: {etablissement.sousDomaine}</p>
                                 <p className="text-gray-500">Utilisateurs: {etablissement.users?.length ?? 0}</p>
                                 <Button className="mt-4 bg-[#c83e3e] hover:bg-[#b53535] text-white w-full">
-                                  Voir plus
+                                  <Link href={`/dashboard/admin/etablissements/${etablissement.id}`}>
+                                    Voir plus
+                                  </Link>
                                 </Button>
                               </CardContent>
                             </Card>
