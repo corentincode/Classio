@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import {auth} from "@/lib/auth";
 
 // Route pour récupérer un ClasseUser spécifique
-export async function GET(request: NextRequest, { params }: { params: { id: string; classeId: string } }) {
+export async function GET(request: NextRequest,{ params }: { params:  Promise<{ id: string; classeId: string , classeUserId: string}> }) {
     try {
         const session = await auth()
 
@@ -12,8 +11,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
 
-        const { id: etablissementId, classeId } = params
-        const classeUserId = request.nextUrl.searchParams.get("classeUserId")
+        // On attend que params soit résolu
+        const resolvedParams = await params;
+        const { id: etablissementId, classeId, classeUserId } = resolvedParams;
+
 
         if (!classeUserId) {
             return NextResponse.json({ message: "L'ID ClasseUser est requis" }, { status: 400 })

@@ -1,19 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import {auth} from "@/lib/auth";
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string; classeId: string; classeUserId: string } },
+    { params }: { params:  Promise<{ id: string; classeId: string; classeUserId: string }> },
 ) {
     try {
+        
         // Vérifier l'authentification et les autorisations
         const session = await auth()
 
+        
         if (!session?.user) {
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
+
+        // On attend que params soit résolu
+        const resolvedParams = await params;
+        const { id: etablissementId, classeId, classeUserId } = resolvedParams;
 
         // Récupérer le rôle de l'utilisateur connecté
         const currentUser = await prisma.user.findUnique({
@@ -25,7 +30,6 @@ export async function DELETE(
             return NextResponse.json({ message: "Utilisateur non trouvé" }, { status: 404 })
         }
 
-        const { id: etablissementId, classeId, classeUserId } = params
 
         // Vérifier les autorisations en fonction du rôle
         if (currentUser.role !== "SUPER_ADMIN") {

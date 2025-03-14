@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {Plus} from "lucide-react";
 import {EtablissementsIdView} from "@/components/dashboard/admin/etablissement/[id]/etablissements-id-view";
+import type {NextRequest} from "next/server";
 
 
 type Etablissement = {
@@ -27,11 +28,14 @@ type User = {
     email: string | null
 }
 
-export default async function EtablissementIdPage({ params }: { params: { id: string } }) {
-    const { id } = params
+export default async function EtablissementIdPage({ params }: { params:  Promise<{ id: string;  }> }) {
+
+
+    const resolvedParams = await params
+    const { id: etablissementId } = resolvedParams
 
     const etablissements: Etablissement | null = await prisma.etablissement.findUnique({
-        where: { id: id },
+        where: { id: etablissementId },
         include: {
             classes: true,
             users: true,

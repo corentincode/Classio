@@ -56,6 +56,7 @@ type ClasseUser = {
     roleInClass: string
     user: {
         id: string
+        firstName: string | null
         name: string | null
         email: string | null
         image: string | null
@@ -251,9 +252,9 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
                         >
                             <Badge variant="outline" className="ml-2">
                                 <span>
-                                    {classeUser.firstName || ""}
+                                    {classeUser.user.firstName || ""}
                                     &nbsp;
-                                    {classeUser.name || classeUser.email}
+                                    {classeUser.user.name || classeUser.user.email}
                                 </span>
                             </Badge>
                         </div>

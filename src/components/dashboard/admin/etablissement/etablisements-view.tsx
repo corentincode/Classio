@@ -44,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {useSession} from "next-auth/react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import {Classe, User} from "@prisma/client";
 
 
 type Etablissement = {

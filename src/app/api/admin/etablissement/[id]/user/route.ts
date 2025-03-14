@@ -12,11 +12,11 @@ const createUserSchema = z.object({
     name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     role: z.enum(["SUPER_ADMIN", "ADMIN", "PROF", "ELEVE"]).default("ELEVE"),
     classeId: z.string().optional(),
+    password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
     roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"]).optional(),
-    password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional(),
 })
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params:  Promise<{ id: string;  }> }) {
     try {
         const session = await auth()
 
@@ -25,7 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
 
-        const etablissementId = params.id
+        const resolvedParams = await params
+        const { id: etablissementId } = resolvedParams
 
         // Récupérer le rôle de l'utilisateur connecté
         const currentUser = await prisma.user.findUnique({
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest,{ params }: { params:  Promise<{ id: string;  }> }) {
     try {
         const session = await auth()
 
@@ -105,7 +106,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             )
         }
 
-        const etablissementId = params.id
+        const resolvedParams = await params
+        const { id: etablissementId } = resolvedParams
 
         // Vérifier si l'établissement existe
         const etablissement = await prisma.etablissement.findUnique({

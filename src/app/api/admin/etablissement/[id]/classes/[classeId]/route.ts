@@ -9,11 +9,17 @@ import {Role} from "@prisma/client";
 // Route pour récupérer toutes les classes d'un établissement
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string; classeId: string } }
+    { params }: { params: Promise<{ id: string; classeId: string }> }
 ) {
-    console.log("Params reçus :", params);
     try {
-        const { id: etablissementId, classeId } = params;
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ message: "Non autorisé" }, { status: 401 });
+        }
+
+        // On attend que params soit résolu
+        const resolvedParams = await params;
+        const { id: etablissementId, classeId } = resolvedParams;
 
         const classe = await prisma.classe.findFirst({
             where: {
@@ -35,3 +41,4 @@ export async function GET(
         );
     }
 }
+

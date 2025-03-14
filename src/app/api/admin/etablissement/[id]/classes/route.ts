@@ -9,7 +9,7 @@ const classeSchema = z.object({
     nom: z.string().min(2),
 })
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; }> }) {
     try {
         // Vérifier l'authentification et les autorisations
         const session = await auth()
@@ -17,6 +17,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         if (!session?.user) {
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
+
+        const resolvedParams = await params
+        const { id: etablissementId } = resolvedParams
 
         // Vérifier si l'utilisateur est un SUPER_ADMIN ou ADMIN
         const user = await prisma.user.findUnique({
@@ -29,7 +32,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         }
 
         // Récupérer l'ID de l'établissement
-        const etablissementId = params.id
 
         // Vérifier si l'établissement existe
         const etablissement = await prisma.etablissement.findUnique({
@@ -71,8 +73,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 // Route pour récupérer toutes les classes d'un établissement
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; classeId: string }> }) {
     try {
-        const resolvedParams = await params
-        const { id: etablissementId, classeId } = resolvedParams
 
         // Vérifier l'authentification et les autorisations
         const session = await auth()
@@ -80,6 +80,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (!session?.user) {
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
+
+        const resolvedParams = await params
+        const { id: etablissementId, classeId } = resolvedParams
 
         return NextResponse.json([])
     } catch (error) {

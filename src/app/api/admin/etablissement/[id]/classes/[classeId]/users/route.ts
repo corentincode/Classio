@@ -32,9 +32,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 }
 
-export async function GET(request: NextRequest, context: { params: { id: string; classeId: string } }) {
+export async function GET(request: NextRequest,{ params }: { params:  Promise<{ id: string; classeId: string }> }) {
     try {
-        const params = await context.params
 
         // Vérifier l'authentification et les autorisations
         const session = await auth()
@@ -42,6 +41,10 @@ export async function GET(request: NextRequest, context: { params: { id: string;
         if (!session?.user) {
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
         }
+
+        // On attend que params soit résolu
+        const resolvedParams = await params;
+        const { id: etablissementId, classeId } = resolvedParams;
 
         // Récupérer le rôle de l'utilisateur connecté
         const currentUser = await prisma.user.findUnique({
@@ -53,7 +56,6 @@ export async function GET(request: NextRequest, context: { params: { id: string;
             return NextResponse.json({ message: "Utilisateur non trouvé" }, { status: 404 })
         }
 
-        const { id: etablissementId, classeId } = params
 
         // Vérifier les autorisations en fonction du rôle
         if (currentUser.role !== "SUPER_ADMIN") {
