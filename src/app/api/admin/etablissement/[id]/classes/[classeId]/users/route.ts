@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import {auth} from "@/lib/auth";
+import {prisma} from "@/lib/prisma";
 
 // Schéma de validation pour l'ajout d'un utilisateur à une classe
 const addUserToClasseSchema = z.object({
@@ -31,13 +32,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 }
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { id: string; classeId: string } }
-) {
+export async function GET(request: NextRequest, context: { params: { id: string; classeId: string } }) {
     try {
+        const params = await context.params
+
         // Vérifier l'authentification et les autorisations
-        const session = await getServerSession()
+        const session = await auth()
 
         if (!session?.user) {
             return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
@@ -114,7 +114,7 @@ export async function GET(
             roleInClass: cu.roleInClass,
             classeUserId: cu.id
         }))
-
+        console.log(formattedUsers)
         return NextResponse.json(formattedUsers)
     } catch (error) {
         console.error("Erreur lors de la récupération des utilisateurs de la classe:", error)

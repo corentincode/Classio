@@ -47,6 +47,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/
 import {Input} from "@/components/ui/input";
 import {CreateClasseForm} from "@/components/dashboard/admin/etablissement/[id]/create-classe-form";
 import {AddUserToClasseForm} from "@/components/dashboard/admin/etablissement/[id]/add-user-to-class-form";
+import {number} from "zod";
 
 type ClasseUser = {
     id: string
@@ -67,6 +68,11 @@ type Classe = {
     classeUsers?: ClasseUser[]
 }
 
+type nbrClasseUsers = {
+    id: number
+
+}
+
 export function ClassesTable({ classes, etablissementId }: { classes: Classe[], etablissementId: string }) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [expanded, setExpanded] = React.useState<ExpandedState>({})
@@ -79,7 +85,7 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
 
     }
     // Fonction pour charger les utilisateurs d'une classe lorsqu'elle est dépliée
-    const fetchClasseUsers = async (classeId: string) => {
+    const fetchClasseUsers = async (etablissementId: string, classeId: string) => {
         try {
             const response = await fetch(`/api/admin/etablissement/${etablissementId}/classes/${classeId}/users`)
             if (response.ok) {
@@ -93,27 +99,14 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
                             : classe
                     )
                 )
+
             }
         } catch (error) {
             console.error("Erreur lors du chargement des utilisateurs de la classe:", error)
         }
     }
 
-    // Surveiller les changements d'état d'expansion
-    useEffect(() => {
-        // Pour chaque classe nouvellement dépliée, charger ses utilisateurs
-        Object.keys(expanded).forEach(key => {
-            if (expanded[key] === true) {
-                const classeId = key.split('.')[1] // Récupérer l'ID de la classe à partir de la clé d'expansion
-                const classe = classesWithUsers.find(c => c.id === classeId)
 
-                // Ne charger les utilisateurs que si ce n'est pas déjà fait
-                if (classe && !classe.classeUsers) {
-                    fetchClasseUsers(classeId)
-                }
-            }
-        })
-    }, [expanded, etablissementId])
 
     const columns: ColumnDef<Classe>[] = [
         {
@@ -217,8 +210,11 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
     })
 
     // Composant pour afficher les utilisateurs d'une classe
-    const ClasseUsersDetail = ({classe}: { classe: Classe }) => {
+    const ClasseUsersDetail = ({classe}: { classe: Classe,  }) => {
+
+
         if (!classe.classeUsers) {
+            fetchClasseUsers(etablissementId,classe.id)
             return <div className="py-2 px-4">
                 <Button
                     onClick={() => setIsAddUserClasseOpen(true)}
@@ -227,13 +223,13 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
 
                 </Button>
                 <AddUserToClasseForm
-                    etablissementId={classe.etablissementId}
+                    etablissementId={etablissementId}
                     classeId={classe.id}
                     isOpen={isAddUserClasseOpen}
                     onOpenChange={setIsAddUserClasseOpen}
                     onSuccess={refreshClasses}
                 />
-                Chargement des utilisateurs...</div>
+                Chargement des utilisateurs...{JSON.stringify(classe.id)}</div>
         }
 
         if (classe.classeUsers.length === 0) {
@@ -242,32 +238,28 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
 
         return (
             <div className="py-2 px-4 bg-muted/30">
+
                 <h4 className="font-medium mb-2 flex items-center">
                     <User className="h-4 w-4 mr-2"/>
                     Utilisateurs de la classe
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {classe.classeUsers.map((classeUser) => (
-                        <div key={classeUser.id} className="flex items-center p-2 border rounded-md bg-background">
-                            <Avatar className="h-8 w-8 mr-2">
-                                {classeUser.user.image ? (
-                                    <AvatarImage src={classeUser.user.image} alt={classeUser.user.name || ""} />
-                                ) : (
-                                    <AvatarFallback>
-                                        {classeUser.user.name ? classeUser.user.name.charAt(0).toUpperCase() : "U"}
-                                    </AvatarFallback>
-                                )}
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{classeUser.user.name || "Sans nom"}</p>
-                                <p className="text-xs text-muted-foreground truncate">{classeUser.user.email}</p>
-                            </div>
+                        <div
+                            key={classeUser.id}
+                            className="flex items-center p-2 border rounded-md bg-background"
+                        >
                             <Badge variant="outline" className="ml-2">
-                                {classeUser.roleInClass}
+                                <span>
+                                    {classeUser.firstName || ""}
+                                    &nbsp;
+                                    {classeUser.name || classeUser.email}
+                                </span>
                             </Badge>
                         </div>
                     ))}
                 </div>
+
             </div>
         )
     }
@@ -362,7 +354,14 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
                                     {row.getIsExpanded() && (
                                         <TableRow>
                                             <TableCell colSpan={columns.length} className="p-0">
-                                                <ClasseUsersDetail classe={row.original} />
+                                                <AddUserToClasseForm
+                                                    etablissementId={etablissementId}
+                                                    classeId={row.original.id}
+                                                    isOpen={isAddUserClasseOpen}
+                                                    onOpenChange={setIsAddUserClasseOpen}
+                                                    onSuccess={refreshClasses}
+                                                />
+                                                <ClasseUsersDetail classe={row.original}  />
                                             </TableCell>
                                         </TableRow>
                                     )}

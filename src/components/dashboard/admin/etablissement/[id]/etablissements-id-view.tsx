@@ -146,7 +146,7 @@ export function EtablissementsIdView({ etablissements }: EtablissementViewProps)
                                         </Button>
                                     </div>
                                     <div className="mt-5">
-                                        <ClassesTable classes={etablissements.classes} />
+                                        <ClassesTable etablissementId={etablissements.id} classes={etablissements.classes} />
                                         <CreateClasseForm
                                             etablissementId={etablissements.id}
                                             isOpen={isAddClasseOpen}
