@@ -50,17 +50,19 @@ import {AddUserToClasseForm} from "@/components/dashboard/admin/etablissement/[i
 import {number} from "zod";
 
 type ClasseUser = {
+    firstName: string;
+    name?: string | null;
     id: string
     userId: string
     classeId: string
     roleInClass: string
     user: {
-        id: string
-        firstName: string | null
-        name: string | null
-        email: string | null
-        image: string | null
-    }
+        id: string;
+        firstName?: string | null;
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+    };
 }
 
 type Classe = {
@@ -246,19 +248,18 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {classe.classeUsers.map((classeUser) => (
-                        <div
-                            key={classeUser.id}
-                            className="flex items-center p-2 border rounded-md bg-background"
-                        >
-                            <Badge variant="outline" className="ml-2">
-                                <span>
-                                    {classeUser.user.firstName || ""}
-                                    &nbsp;
-                                    {classeUser.user.name || classeUser.user.email}
-                                </span>
-                            </Badge>
-                        </div>
-                    ))}
+                            <div
+                                key={classeUser.id}
+                                className="flex items-center p-2 border rounded-md bg-background"
+                            >
+                                <Badge variant="outline" className="ml-2">
+        <span>
+          {classeUser.firstName ?? "N/A"}&nbsp;
+            {classeUser.name ?? "N/A"}
+        </span>
+                                </Badge>
+                            </div>
+                        ))}
                 </div>
 
             </div>
