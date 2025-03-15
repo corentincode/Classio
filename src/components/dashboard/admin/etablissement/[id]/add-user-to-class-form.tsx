@@ -140,12 +140,14 @@ export function AddUserToClasseForm({
                 }
             }
 
+
+
             fetchUsers()
             fetchClasse()
         }
-    }, [etablissementId, classeId, isOpen])
+    }, [etablissementId, classeId, isOpen, ])
 
-    // Réinitialiser les formulaires lors du changement de mode
+// Réinitialiser les formulaires lors du changement de mode
     useEffect(() => {
         if (createNewUser) {
             newUserForm.reset({
@@ -206,7 +208,8 @@ export function AddUserToClasseForm({
     }
 
     // Fonction de soumission pour nouvel utilisateur
-    async function onSubmitNewUser(values: NewUserFormValues) {
+    async function onSubmitNewUser(valuesq: NewUserFormValues) {
+
         setIsLoading(true)
         setError(null)
 
@@ -218,13 +221,13 @@ export function AddUserToClasseForm({
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    email: values.email,
-                    firstName: values.firstName,
-                    name: values.name,
-                    password: values.password,
-                    role: values.roleInClass === "PROF" ? "PROF" : "ELEVE", // Définir le rôle global en fonction du rôle dans la classe
+                    email: valuesq.email,
+                    firstName: valuesq.firstName,
+                    name: valuesq.name,
+                    password: valuesq.password,
+                    role: valuesq.roleInClass === "PROF" ? "PROF" : "ELEVE", // Définir le rôle global en fonction du rôle dans la classe
                     classeId: classeId,
-                    roleInClass: values.roleInClass,
+                    roleInClass: valuesq.roleInClass,
                 }),
             })
 
@@ -283,14 +286,14 @@ export function AddUserToClasseForm({
                 </div>
 
                 {createNewUser ? (
-                    <Form {...newUserForm}>
+                    <Form {...newUserForm} key="newUserForm">
                         <form onSubmit={newUserForm.handleSubmit(onSubmitNewUser)} className="space-y-4">
                             <FormField
                                 control={newUserForm.control}
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email</FormLabel>
+                                        <FormLabel>Email {JSON.stringify(createNewUser)}</FormLabel>
                                         <FormControl>
                                             <Input placeholder="email@exemple.com" {...field} />
                                         </FormControl>
@@ -360,7 +363,6 @@ export function AddUserToClasseForm({
                                     </FormItem>
                                 )}
                             />
-
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                                     Annuler
@@ -372,7 +374,7 @@ export function AddUserToClasseForm({
                         </form>
                     </Form>
                 ) : (
-                    <Form {...existingUserForm}>
+                    <Form {...existingUserForm} key="existingUserForm">
                         <form onSubmit={existingUserForm.handleSubmit(onSubmitExistingUser)} className="space-y-4">
                             <FormField
                                 control={existingUserForm.control}
@@ -430,7 +432,6 @@ export function AddUserToClasseForm({
                                     </FormItem>
                                 )}
                             />
-
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                                     Annuler
@@ -442,6 +443,7 @@ export function AddUserToClasseForm({
                         </form>
                     </Form>
                 )}
+
             </DialogContent>
         </Dialog>
     )
