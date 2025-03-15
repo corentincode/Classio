@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import {auth} from "@/lib/auth";
 
 // Route pour retirer un utilisateur d'une classe sans le supprimer du système
-export async function DELETE(request: NextRequest,{ params }: { params:  Promise<{ id: string; classeId: string , classeUserId: string}> }) {
+export async function DELETE(request: NextRequest,{ params }: { params:  Promise<{ id: string; classeId: string , userId: string}> }) {
     try {
         const session = await auth()
 
@@ -13,7 +13,7 @@ export async function DELETE(request: NextRequest,{ params }: { params:  Promise
 
         // On attend que params soit résolu
         const resolvedParams = await params;
-        const { id: etablissementId, classeId, classeUserId } = resolvedParams;
+        const { id: etablissementId, classeId, userId } = resolvedParams;
 
 
         if (!session?.user) {
@@ -58,7 +58,7 @@ export async function DELETE(request: NextRequest,{ params }: { params:  Promise
         // Vérifier si l'utilisateur existe et appartient à l'établissement
         const user = await prisma.user.findFirst({
             where: {
-                id: classeUserId,
+                id: userId,
                 etablissementId,
             },
         })
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest,{ params }: { params:  Promise
         const classeUser = await prisma.classeUser.findFirst({
             where: {
                 classeId,
-                userId:classeUserId,
+                userId,
             },
         })
 
@@ -87,7 +87,7 @@ export async function DELETE(request: NextRequest,{ params }: { params:  Promise
             where: {
                 classeId_userId: {
                     classeId,
-                    userId:classeUserId,
+                    userId,
                 },
             },
         })

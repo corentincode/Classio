@@ -116,10 +116,10 @@ model Matiere {
 }
 
 model Cours {
-  id        String  @id @default(uuid())
+  id        String @id @default(uuid())
   classeId  String
   matiereId String
-  teacherId String? // Optionnel, référence à un utilisateur (PROF) qui enseigne ce cours
+  teacherId String // Optionnel, référence à un utilisateur (PROF) qui enseigne ce cours
 
   classe  Classe  @relation(fields: [classeId], references: [id])
   matiere Matiere @relation(fields: [matiereId], references: [id])

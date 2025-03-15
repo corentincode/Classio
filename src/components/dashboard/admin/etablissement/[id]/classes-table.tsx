@@ -272,7 +272,7 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
 
                     </div>
                 </div>
-                <UsersTable users={classe.classeUsers}/>
+                <UsersTable users={classe.classeUsers} etablissementId={etablissementId} classeId={classe.id}/>
 
             </div>
         )
