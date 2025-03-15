@@ -12,7 +12,7 @@ import {
     ExpandedState,
     getExpandedRowModel,
 } from "@tanstack/react-table"
-import {ArrowUpDown, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Plus, Trash, User} from 'lucide-react'
+import {ArrowUpDown, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Plus, Trash, User, UserPlus} from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -48,6 +48,7 @@ import {Input} from "@/components/ui/input";
 import {CreateClasseForm} from "@/components/dashboard/admin/etablissement/[id]/create-classe-form";
 import {AddUserToClasseForm} from "@/components/dashboard/admin/etablissement/[id]/add-user-to-class-form";
 import {number} from "zod";
+import {UsersTable} from "@/components/dashboard/admin/etablissement/[id]/users-table";
 
 type ClasseUser = {
     firstName: string;
@@ -56,6 +57,8 @@ type ClasseUser = {
     userId: string
     classeId: string
     roleInClass: string
+    email: string
+    image: string
     user: {
         id: string;
         firstName?: string | null;
@@ -225,42 +228,51 @@ export function ClassesTable({ classes, etablissementId }: { classes: Classe[], 
                     Ajouter un utilisateur
 
                 </Button>
-                <AddUserToClasseForm
-                    etablissementId={etablissementId}
-                    classeId={classe.id}
-                    isOpen={isAddUserClasseOpen}
-                    onOpenChange={setIsAddUserClasseOpen}
-                    onSuccess={refreshClasses}
-                />
+
                 Chargement des utilisateurs...{JSON.stringify(classe.id)}</div>
         }
 
         if (classe.classeUsers.length === 0) {
-            return <div className="py-2 px-4 text-muted-foreground">Aucun utilisateur associé à cette classe</div>
+            return <div className="py-2 px-4 text-muted-foreground">
+                <div className="flex justify-between items-center py-3">
+                    <h4 className="font-medium mb-2 flex items-center">
+                        <User className="h-4 w-4 mr-2"/>
+                        Utilisateurs de la classe
+                    </h4>
+                    <div>
+                        <Button className="bg-red-300 text-xs px-2 py-2 h-7"
+                                onClick={() => setIsAddUserClasseOpen(true)}
+                        >
+
+                            Ajouter un utilisateur
+                            <UserPlus className="h-4 w-4 mr-2"/>
+                        </Button>
+
+                    </div>
+                </div>
+                Aucun utilisateur associé à cette classe</div>
         }
 
         return (
             <div className="py-2 px-4 bg-muted/30">
 
-                <h4 className="font-medium mb-2 flex items-center">
-                    <User className="h-4 w-4 mr-2"/>
-                    Utilisateurs de la classe
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {classe.classeUsers.map((classeUser) => (
-                            <div
-                                key={classeUser.id}
-                                className="flex items-center p-2 border rounded-md bg-background"
-                            >
-                                <Badge variant="outline" className="ml-2">
-        <span>
-          {classeUser.firstName ?? "N/A"}&nbsp;
-            {classeUser.name ?? "N/A"}
-        </span>
-                                </Badge>
-                            </div>
-                        ))}
+                <div className="flex justify-between items-center py-3">
+                    <h4 className="font-medium mb-2 flex items-center">
+                        <User className="h-4 w-4 mr-2"/>
+                        Utilisateurs de la classe
+                    </h4>
+                    <div>
+                        <Button className="bg-red-300 text-xs px-2 py-2 h-7"
+                                onClick={() => setIsAddUserClasseOpen(true)}
+                        >
+
+                            Ajouter un utilisateur
+                            <UserPlus className="h-4 w-4 mr-2"/>
+                        </Button>
+
+                    </div>
                 </div>
+                <UsersTable users={classe.classeUsers}/>
 
             </div>
         )

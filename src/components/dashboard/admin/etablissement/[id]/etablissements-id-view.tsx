@@ -28,7 +28,7 @@ import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} f
 import React, {useState} from "react";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {motion} from "framer-motion";
-import {ClassesTable} from "@/components/dashboard/admin/etablissement/[id]/clases-table";
+import {ClassesTable} from "@/components/dashboard/admin/etablissement/[id]/classes-table";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";

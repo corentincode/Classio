@@ -18,39 +18,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 
-// Définition du schéma de validation pour le formulaire
-const addUserToClasseSchema = z
-    .object({
-        userId: z
-            .string({
-                required_error: "Veuillez sélectionner un utilisateur",
-            })
-            .optional(),
-        email: z.string().email("Veuillez entrer une adresse email valide").optional(),
-        firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères").optional(),
-        name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").optional(),
-        password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères" }),
-        roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"], {
-            required_error: "Veuillez sélectionner un rôle",
-        }),
-        createNewUser: z.boolean().default(false),
-    })
-    .refine(
-        (data) => {
-            // Si on crée un nouvel utilisateur, email, firstName et name sont requis
-            if (data.createNewUser) {
-                return !!data.email && !!data.firstName && !!data.name
-            }
-            // Sinon, userId est requis
-            return !!data.userId
-        },
-        {
-            message: "Veuillez sélectionner un utilisateur existant ou remplir tous les champs pour en créer un nouveau",
-            path: ["userId"],
-        },
-    )
+// Schéma pour ajouter un utilisateur existant
+const existingUserSchema = z.object({
+    userId: z.string({
+        required_error: "Veuillez sélectionner un utilisateur",
+    }),
+    roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"], {
+        required_error: "Veuillez sélectionner un rôle",
+    }),
+})
 
-type AddUserToClasseFormValues = z.infer<typeof addUserToClasseSchema>
+// Schéma pour créer un nouvel utilisateur
+const newUserSchema = z.object({
+    email: z.string().email("Veuillez entrer une adresse email valide"),
+    firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+    name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères" }),
+    roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"], {
+        required_error: "Veuillez sélectionner un rôle",
+    }),
+})
+
+// Définir des types distincts pour chaque mode
+type ExistingUserFormValues = z.infer<typeof existingUserSchema>
+type NewUserFormValues = z.infer<typeof newUserSchema>
 
 type User = {
     id: string
@@ -87,23 +78,29 @@ export function AddUserToClasseForm({
     const [createNewUser, setCreateNewUser] = useState(false)
     const router = useRouter()
 
-    const form = useForm<AddUserToClasseFormValues>({
-        resolver: zodResolver(addUserToClasseSchema),
+    // Formulaire pour utilisateur existant
+    const existingUserForm = useForm<ExistingUserFormValues>({
+        resolver: zodResolver(existingUserSchema),
         defaultValues: {
             userId: "",
+            roleInClass: "ELEVE",
+        },
+    })
+
+    // Formulaire pour nouvel utilisateur
+    const newUserForm = useForm<NewUserFormValues>({
+        resolver: zodResolver(newUserSchema),
+        defaultValues: {
             email: "",
             firstName: "",
             name: "",
             password: "",
             roleInClass: "ELEVE",
-            createNewUser: false,
         },
     })
 
-    // Mettre à jour le formulaire quand createNewUser change
-    useEffect(() => {
-        form.setValue("createNewUser", createNewUser)
-    }, [createNewUser, form])
+    // Utiliser le formulaire approprié en fonction du mode
+    const form = createNewUser ? newUserForm : existingUserForm
 
     // Charger les utilisateurs de l'établissement et les infos de la classe
     useEffect(() => {
@@ -111,7 +108,9 @@ export function AddUserToClasseForm({
             const fetchUsers = async () => {
                 setLoadingUsers(true)
                 try {
-                    const response = await fetch(`/api/admin/etablissement/${etablissementId}/users`)
+                    const response = await fetch(
+                        `/api/admin/etablissement/${etablissementId}/classes/${classeId}/available-users`,
+                    )
                     if (response.ok) {
                         const data = await response.json()
                         setUsers(data)
@@ -146,79 +145,106 @@ export function AddUserToClasseForm({
         }
     }, [etablissementId, classeId, isOpen])
 
-    async function onSubmit(values: AddUserToClasseFormValues) {
+    // Réinitialiser les formulaires lors du changement de mode
+    useEffect(() => {
+        if (createNewUser) {
+            newUserForm.reset({
+                email: "",
+                firstName: "",
+                name: "",
+                password: "",
+                roleInClass: "ELEVE",
+            })
+        } else {
+            existingUserForm.reset({
+                userId: "",
+                roleInClass: "ELEVE",
+            })
+        }
+    }, [createNewUser, newUserForm, existingUserForm])
+
+    // Fonction de soumission pour utilisateur existant
+    async function onSubmitExistingUser(values: ExistingUserFormValues) {
         setIsLoading(true)
         setError(null)
 
         try {
-            if (createNewUser) {
-                // Créer un nouvel utilisateur et l'associer directement à la classe
-                const response = await fetch(`/api/admin/etablissement/${etablissementId}/user`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        email: values.email,
-                        firstName: values.firstName,
-                        name: values.name,
-                        password: values.password,
-                        role: values.roleInClass === "PROF" ? "PROF" : "ELEVE", // Définir le rôle global en fonction du rôle dans la classe
-                        classeId: classeId,
-                        roleInClass: values.roleInClass,
-                    }),
-                })
+            // Ajouter un utilisateur existant à la classe
+            const response = await fetch(`/api/admin/etablissement/${etablissementId}/classes/${classeId}/users`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    userId: values.userId,
+                    roleInClass: values.roleInClass,
+                }),
+            })
 
-                const data = await response.json()
+            const data = await response.json()
 
-                if (!response.ok) {
-                    setError(data.message || "Une erreur est survenue lors de la création de l'utilisateur")
-                    return
-                }
+            if (!response.ok) {
+                setError(data.message || "Une erreur est survenue lors de l'ajout de l'utilisateur à la classe")
+                return
+            }
 
-                // Réinitialiser le formulaire
-                form.reset()
-                setCreateNewUser(false)
+            // Réinitialiser le formulaire
+            existingUserForm.reset()
 
-                // Fermer le dialogue
-                onOpenChange(false)
+            // Fermer le dialogue
+            onOpenChange(false)
 
-                // Rafraîchir les données
-                if (onSuccess) {
-                    onSuccess()
-                }
-            } else {
-                // Ajouter un utilisateur existant à la classe
-                const response = await fetch(`/api/admin/classes/users`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        userId: values.userId,
-                        roleInClass: values.roleInClass,
-                        etablissementId,
-                        classeId,
-                    }),
-                })
+            // Rafraîchir les données
+            if (onSuccess) {
+                onSuccess()
+            }
+        } catch (error) {
+            setError("Une erreur est survenue. Veuillez réessayer.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
-                const data = await response.json()
+    // Fonction de soumission pour nouvel utilisateur
+    async function onSubmitNewUser(values: NewUserFormValues) {
+        setIsLoading(true)
+        setError(null)
 
-                if (!response.ok) {
-                    setError(data.message || "Une erreur est survenue lors de l'ajout de l'utilisateur à la classe")
-                    return
-                }
+        try {
+            // Créer un nouvel utilisateur et l'associer directement à la classe
+            const response = await fetch(`/api/admin/etablissement/${etablissementId}/user`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: values.email,
+                    firstName: values.firstName,
+                    name: values.name,
+                    password: values.password,
+                    role: values.roleInClass === "PROF" ? "PROF" : "ELEVE", // Définir le rôle global en fonction du rôle dans la classe
+                    classeId: classeId,
+                    roleInClass: values.roleInClass,
+                }),
+            })
 
-                // Réinitialiser le formulaire
-                form.reset()
+            const data = await response.json()
 
-                // Fermer le dialogue
-                onOpenChange(false)
+            if (!response.ok) {
+                setError(data.message || "Une erreur est survenue lors de la création de l'utilisateur")
+                return
+            }
 
-                // Rafraîchir les données
-                if (onSuccess) {
-                    onSuccess()
-                }
+            // Réinitialiser le formulaire
+            newUserForm.reset()
+            setCreateNewUser(false)
+
+            // Fermer le dialogue
+            onOpenChange(false)
+
+            // Rafraîchir les données
+            if (onSuccess) {
+                onSuccess()
             }
         } catch (error) {
             setError("Une erreur est survenue. Veuillez réessayer.")
@@ -256,11 +282,100 @@ export function AddUserToClasseForm({
                     </Button>
                 </div>
 
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        {!createNewUser ? (
+                {createNewUser ? (
+                    <Form {...newUserForm}>
+                        <form onSubmit={newUserForm.handleSubmit(onSubmitNewUser)} className="space-y-4">
                             <FormField
-                                control={form.control}
+                                control={newUserForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="email@exemple.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newUserForm.control}
+                                name="firstName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Prénom</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Prénom" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newUserForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nom</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Nom" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newUserForm.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Mot de passe</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="Mot de passe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newUserForm.control}
+                                name="roleInClass"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Rôle dans la classe</FormLabel>
+                                        <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionner un rôle" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ELEVE">Élève</SelectItem>
+                                                    <SelectItem value="PROF">Professeur</SelectItem>
+                                                    <SelectItem value="SURVEILLANT">Surveillant</SelectItem>
+                                                    <SelectItem value="SECRETAIRE">Secrétaire</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                                    Annuler
+                                </Button>
+                                <Button type="submit" disabled={isLoading} className="bg-[#c83e3e] hover:bg-[#b53535]">
+                                    {isLoading ? "Ajout en cours..." : "Ajouter à la classe"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                ) : (
+                    <Form {...existingUserForm}>
+                        <form onSubmit={existingUserForm.handleSubmit(onSubmitExistingUser)} className="space-y-4">
+                            <FormField
+                                control={existingUserForm.control}
                                 name="userId"
                                 render={({ field }) => (
                                     <FormItem>
@@ -275,11 +390,16 @@ export function AddUserToClasseForm({
                                                     />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {users.map((user) => (
-                                                        <SelectItem key={user.id} value={user.id}>
-                                                            {user.name || "Sans nom"} ({user.email})
-                                                        </SelectItem>
-                                                    ))}
+                                                    {Array.isArray(users) && users.length === 0 ? (
+                                                        <div className="p-2 text-center text-muted-foreground">Aucun utilisateur disponible</div>
+                                                    ) : (
+                                                        Array.isArray(users) &&
+                                                        users.map((user) => (
+                                                            <SelectItem key={user.id} value={user.id}>
+                                                                {user.name || "Sans nom"} ({user.email})
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormControl>
@@ -287,97 +407,41 @@ export function AddUserToClasseForm({
                                     </FormItem>
                                 )}
                             />
-                        ) : (
-                            <>
-                                <FormField
-                                    control={form.control}
-                                    name="email"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="email@exemple.com" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="firstName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Prénom</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Prénom" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Nom</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Nom" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Mot de passe</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </>
-                        )}
+                            <FormField
+                                control={existingUserForm.control}
+                                name="roleInClass"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Rôle dans la classe</FormLabel>
+                                        <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionner un rôle" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ELEVE">Élève</SelectItem>
+                                                    <SelectItem value="PROF">Professeur</SelectItem>
+                                                    <SelectItem value="SURVEILLANT">Surveillant</SelectItem>
+                                                    <SelectItem value="SECRETAIRE">Secrétaire</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <FormField
-                            control={form.control}
-                            name="roleInClass"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Rôle dans la classe</FormLabel>
-                                    <FormControl>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Sélectionner un rôle" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="ELEVE">Élève</SelectItem>
-                                                <SelectItem value="PROF">Professeur</SelectItem>
-                                                <SelectItem value="SURVEILLANT">Surveillant</SelectItem>
-                                                <SelectItem value="SECRETAIRE">Secrétaire</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => onOpenChange(false)}>
-                                Annuler
-                            </Button>
-                            <Button type="submit" disabled={isLoading || loadingUsers} className="bg-[#c83e3e] hover:bg-[#b53535]">
-                                {isLoading ? "Ajout en cours..." : "Ajouter à la classe"}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                                    Annuler
+                                </Button>
+                                <Button type="submit" disabled={isLoading || loadingUsers} className="bg-[#c83e3e] hover:bg-[#b53535]">
+                                    {isLoading ? "Ajout en cours..." : "Ajouter à la classe"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                )}
             </DialogContent>
         </Dialog>
     )
