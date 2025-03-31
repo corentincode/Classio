@@ -35,15 +35,14 @@ async function getEtablissement(id: string) {
   }
 }
 
-// Correction du type PageProps pour correspondre aux attentes de Next.js
-type PageProps = {
-  params: {
-    id: string
-  }
-}
-
-export default async function EtablissementDetailPage({ params }: PageProps) {
-  const etablissement = await getEtablissement(params.id)
+export default async function EtablissementDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  // Attendre les paramètres avant de les utiliser
+  const resolvedParams = await params
+  const etablissement = await getEtablissement(resolvedParams.id)
 
   if (!etablissement) {
     notFound()
