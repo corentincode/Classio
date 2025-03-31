@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Clock, MapPin, Users } from "lucide-react"
-import type { CalendarEvent } from "./calendar-content"
+import type { CalendarEvent, EventType } from "@/types/calendar"
 
 interface CalendarDayViewProps {
   currentDate: Date
@@ -69,12 +69,14 @@ export function CalendarDayView({ currentDate, events }: CalendarDayViewProps) {
         return "#9b59b6"
       case "conge":
         return "#2ecc71"
+      case "autre":
+        return "#64748b"
       default:
         return "#64748b"
     }
   }
 
-  const getEventTypeLabel = (type: string) => {
+  const getEventTypeLabel = (type: EventType) => {
     switch (type) {
       case "cours":
         return "Cours"
@@ -86,6 +88,8 @@ export function CalendarDayView({ currentDate, events }: CalendarDayViewProps) {
         return "Événement"
       case "conge":
         return "Congé"
+      case "autre":
+        return "Autre"
       default:
         return type
     }

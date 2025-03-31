@@ -14,20 +14,7 @@ import { CalendarMonthView } from "./calendar-month-view"
 import { CalendarWeekView } from "./calendar-week-view"
 import { CalendarDayView } from "./calendar-day-view"
 import { AddEventDialog } from "./add-event-dialog"
-
-// Types pour les événements du calendrier
-export type EventType = "cours" | "reunion" | "examen" | "autre"
-
-export interface CalendarEvent {
-  id: string
-  title: string
-  start: Date
-  end: Date
-  type: EventType
-  location?: string
-  description?: string
-  participants?: string[]
-}
+import type { CalendarEvent } from "@/types/calendar"
 
 // Données fictives pour les événements
 const events: CalendarEvent[] = [
@@ -66,10 +53,11 @@ const events: CalendarEvent[] = [
     title: "Sortie scolaire - Musée",
     start: new Date(2023, 10, 20, 9, 0),
     end: new Date(2023, 10, 20, 17, 0),
-    type: "autre",
+    type: "evenement",
     location: "Musée d'Histoire",
     description: "Visite guidée et atelier pédagogique",
     participants: ["Classe de 5ème C", "Professeurs accompagnateurs"],
+    allDay: true,
   },
   {
     id: "5",
@@ -253,6 +241,8 @@ export default function CalendarContent() {
                   <SelectItem value="cours">Cours</SelectItem>
                   <SelectItem value="reunion">Réunions</SelectItem>
                   <SelectItem value="examen">Examens</SelectItem>
+                  <SelectItem value="evenement">Événements</SelectItem>
+                  <SelectItem value="conge">Congés</SelectItem>
                   <SelectItem value="autre">Autres</SelectItem>
                 </SelectContent>
               </Select>
@@ -274,8 +264,12 @@ export default function CalendarContent() {
                   <span className="text-sm text-gray-600">Contrôles et évaluations</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-purple-500 hover:bg-purple-600">Autres</Badge>
+                  <Badge className="bg-purple-500 hover:bg-purple-600">Événements</Badge>
                   <span className="text-sm text-gray-600">Sorties et événements</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-yellow-500 hover:bg-yellow-600">Congés</Badge>
+                  <span className="text-sm text-gray-600">Vacances et jours fériés</span>
                 </div>
               </div>
             </div>

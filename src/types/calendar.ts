@@ -1,4 +1,4 @@
-export type EventType = "cours" | "reunion" | "examen" | "evenement" | "conge"
+export type EventType = "cours" | "reunion" | "examen" | "evenement" | "conge" | "autre"
 
 export interface CalendarEvent {
   id: string
@@ -44,4 +44,3 @@ export interface DaySchedule {
   timeSlots: TimeSlot[]
   events: CalendarEvent[]
 }
-

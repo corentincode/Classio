@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Clock, MapPin, Users } from "lucide-react"
-import type { CalendarEvent } from "./calendar-content"
+import type { CalendarEvent } from "@/types/calendar"
 
 interface CalendarWeekViewProps {
   currentDate: Date
@@ -241,7 +241,7 @@ export function CalendarWeekView({ currentDate, events }: CalendarWeekViewProps)
                   <div>
                     <p className="font-medium">Participants</p>
                     <div className="text-sm text-muted-foreground">
-                      {selectedEvent.participants.map((participant, index) => (
+                      {selectedEvent.participants.map((participant: string, index: number) => (
                         <p key={index}>{participant}</p>
                       ))}
                     </div>

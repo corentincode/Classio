@@ -111,16 +111,18 @@ function getStatusText(status: AttendanceStatus) {
 }
 
 // Fonction pour obtenir la couleur du badge
-function getStatusBadgeVariant(status: AttendanceStatus) {
+function getStatusBadgeVariant(status: AttendanceStatus): "default" | "outline" | "destructive" | "secondary" {
   switch (status) {
     case "present":
       return "outline"
     case "absent":
       return "destructive"
     case "late":
-      return "warning"
+      return "outline" // Changé de "warning" à "outline"
     case "excused":
       return "secondary"
+    default:
+      return "default"
   }
 }
 
@@ -189,7 +191,9 @@ export default function AttendanceTable({ date, classId }: AttendanceTableProps)
               <TableCell>
                 <Badge
                   variant={getStatusBadgeVariant(student.attendance.morning)}
-                  className="flex w-24 items-center justify-center gap-1"
+                  className={`flex w-24 items-center justify-center gap-1 ${
+                    student.attendance.morning === "late" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : ""
+                  }`}
                 >
                   {getStatusIcon(student.attendance.morning)}
                   <span>{getStatusText(student.attendance.morning)}</span>
@@ -198,7 +202,9 @@ export default function AttendanceTable({ date, classId }: AttendanceTableProps)
               <TableCell>
                 <Badge
                   variant={getStatusBadgeVariant(student.attendance.afternoon)}
-                  className="flex w-24 items-center justify-center gap-1"
+                  className={`flex w-24 items-center justify-center gap-1 ${
+                    student.attendance.afternoon === "late" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : ""
+                  }`}
                 >
                   {getStatusIcon(student.attendance.afternoon)}
                   <span>{getStatusText(student.attendance.afternoon)}</span>

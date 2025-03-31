@@ -40,6 +40,22 @@ const studentsData = [
   { id: "8", name: "Théo Roux", class: "3ème C" },
 ]
 
+// Fonction pour obtenir la variante du badge en fonction du statut
+function getStatusBadgeVariant(status: AttendanceStatus): "default" | "outline" | "destructive" | "secondary" {
+  switch (status) {
+    case "present":
+      return "outline"
+    case "absent":
+      return "destructive"
+    case "late":
+      return "outline" // Changé de "warning" à "outline"
+    case "excused":
+      return "secondary"
+    default:
+      return "default"
+  }
+}
+
 interface RecordAttendanceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -166,16 +182,12 @@ export default function RecordAttendanceDialog({ open, onOpenChange, date, class
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              getStudentStatus(student.id) === "present"
-                                ? "outline"
-                                : getStudentStatus(student.id) === "absent"
-                                  ? "destructive"
-                                  : getStudentStatus(student.id) === "late"
-                                    ? "warning"
-                                    : "secondary"
-                            }
-                            className="flex w-24 items-center justify-center gap-1"
+                            variant={getStatusBadgeVariant(getStudentStatus(student.id))}
+                            className={`flex w-24 items-center justify-center gap-1 ${
+                              getStudentStatus(student.id) === "late"
+                                ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                                : ""
+                            }`}
                           >
                             {getStudentStatus(student.id) === "present" && (
                               <CheckCircle className="h-4 w-4 text-green-500" />
