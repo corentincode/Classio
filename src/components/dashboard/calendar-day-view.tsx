@@ -1,13 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { format, parseISO } from "date-fns"
+import React, { useState } from "react"
+import { format, setHours, setMinutes, isSameDay } from "date-fns"
 import { fr } from "date-fns/locale"
-import type { Event } from "@/types/calendar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Trash2, Clock, MapPin, CalendarIcon, Info, Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,217 +12,261 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Clock, MapPin, Users } from "lucide-react"
+import type { CalendarEvent } from "./calendar-content"
 
 interface CalendarDayViewProps {
-  selectedDate: Date
-  events: Event[]
-  onDeleteEvent: (id: string) => void
-  onAddEvent: () => void
+  currentDate: Date
+  events: CalendarEvent[]
 }
 
-export default function CalendarDayView({ selectedDate, events, onDeleteEvent, onAddEvent }: CalendarDayViewProps) {
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+export function CalendarDayView({ currentDate, events }: CalendarDayViewProps) {
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  // Get event type color
-  const getEventTypeColor = (type: Event["type"]) => {
-    switch (type) {
-      case "class":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-200"
-      case "meeting":
-        return "bg-purple-100 text-purple-800 hover:bg-purple-200"
-      case "event":
-        return "bg-green-100 text-green-800 hover:bg-green-200"
-      case "exam":
-        return "bg-red-100 text-red-800 hover:bg-red-200"
-      case "holiday":
-        return "bg-amber-100 text-amber-800 hover:bg-amber-200"
+  // Heures de début et de fin de la journée
+  const dayStartHour = 8
+  const dayEndHour = 18
+
+  // Générer les heures
+  const hours = Array.from({ length: dayEndHour - dayStartHour + 1 }, (_, i) => dayStartHour + i)
+
+  // Filtrer les événements pour la journée actuelle
+  const dayEvents = events
+    .filter((event) => isSameDay(currentDate, new Date(event.start)))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+  // Événements pour toute la journée
+  const allDayEvents = dayEvents.filter((event) => event.allDay)
+
+  // Événements avec des heures spécifiques
+  const timedEvents = dayEvents.filter((event) => !event.allDay)
+
+  const getEventsForHour = (hour: number) => {
+    const hourStart = setMinutes(setHours(new Date(currentDate), hour), 0)
+    const hourEnd = setMinutes(setHours(new Date(currentDate), hour + 1), 0)
+
+    return timedEvents.filter((event) => {
+      const eventStart = new Date(event.start)
+      const eventEnd = new Date(event.end)
+
+      // Vérifier si l'événement est dans cette heure
+      return eventStart <= hourEnd && eventEnd >= hourStart
+    })
+  }
+
+  const getEventColor = (event: CalendarEvent) => {
+    if (event.color) return event.color
+
+    switch (event.type) {
+      case "cours":
+        return "#c83e3e"
+      case "reunion":
+        return "#3e8ac8"
+      case "examen":
+        return "#e67e22"
+      case "evenement":
+        return "#9b59b6"
+      case "conge":
+        return "#2ecc71"
       default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+        return "#64748b"
     }
   }
 
-  // Get event type label
-  const getEventTypeLabel = (type: Event["type"]) => {
+  const getEventTypeLabel = (type: string) => {
     switch (type) {
-      case "class":
+      case "cours":
         return "Cours"
-      case "meeting":
+      case "reunion":
         return "Réunion"
-      case "event":
-        return "Événement"
-      case "exam":
+      case "examen":
         return "Examen"
-      case "holiday":
+      case "evenement":
+        return "Événement"
+      case "conge":
         return "Congé"
       default:
-        return "Autre"
+        return type
     }
   }
 
-  // Filter events for the selected date
-  const dayEvents = events
-    .filter((event) => format(parseISO(event.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+  const formatEventTime = (event: CalendarEvent) => {
+    if (event.allDay) return "Toute la journée"
+    return `${format(new Date(event.start), "HH:mm")} - ${format(new Date(event.end), "HH:mm")}`
+  }
+
+  const getEventPosition = (event: CalendarEvent, hour: number) => {
+    const eventStart = new Date(event.start)
+    const eventEnd = new Date(event.end)
+
+    const hourStart = setMinutes(setHours(new Date(eventStart), hour), 0)
+    const hourEnd = setMinutes(setHours(new Date(eventStart), hour + 1), 0)
+
+    // Calculer la position de début (en pourcentage de l'heure)
+    let startPercent = 0
+    if (eventStart > hourStart) {
+      const diffMinutes = (eventStart.getTime() - hourStart.getTime()) / (1000 * 60)
+      startPercent = (diffMinutes / 60) * 100
+    }
+
+    // Calculer la hauteur (en pourcentage de l'heure)
+    let heightPercent = 100
+    if (eventEnd < hourEnd) {
+      const diffMinutes = (eventEnd.getTime() - hourStart.getTime()) / (1000 * 60)
+      heightPercent = (diffMinutes / 60) * 100
+    } else if (eventStart > hourStart) {
+      const diffMinutes = (hourEnd.getTime() - eventStart.getTime()) / (1000 * 60)
+      heightPercent = (diffMinutes / 60) * 100
+    }
+
+    return {
+      top: `${startPercent}%`,
+      height: `${heightPercent}%`,
+    }
+  }
 
   return (
     <>
-      <div className="p-6">
-        <div className="space-y-6">
-          <div className="text-center mb-6">
-            <h3 className="text-lg font-medium capitalize">
-              {format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}
-            </h3>
-          </div>
-
-          <div className="space-y-4">
-            {dayEvents.length > 0 ? (
-              dayEvents.map((event) => (
-                <Card key={event.id} className="shadow-sm hover:shadow transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={getEventTypeColor(event.type)}>
+      <div className="space-y-6">
+        {/* Événements pour toute la journée */}
+        {allDayEvents.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Toute la journée</h3>
+            <div className="space-y-1">
+              {allDayEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="p-2 rounded cursor-pointer"
+                  style={{
+                    backgroundColor: `${getEventColor(event)}20`,
+                    borderLeft: `3px solid ${getEventColor(event)}`,
+                  }}
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Badge style={{ backgroundColor: getEventColor(event) }} className="text-white mb-1">
                         {getEventTypeLabel(event.type)}
                       </Badge>
-                      <CardTitle className="text-lg">{event.title}</CardTitle>
+                      <h4 className="font-medium">{event.title}</h4>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-gray-500 hover:text-red-600"
-                      onClick={() => onDeleteEvent(event.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span>
-                          {event.startTime} - {event.endTime}
-                        </span>
+                    {event.location && (
+                      <div className="text-sm text-muted-foreground flex items-center">
+                        <MapPin className="h-4 w-4 mr-1" /> {event.location}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>{event.location}</span>
-                      </div>
-                      {event.description && (
-                        <div className="pt-2">
-                          <p className="text-gray-600">{event.description}</p>
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {event.classId && (
-                          <Badge variant="outline" className="bg-gray-100">
-                            Classe: {event.classId}
-                          </Badge>
-                        )}
-                        {event.teacherId && (
-                          <Badge variant="outline" className="bg-gray-100">
-                            Enseignant: {event.teacherId}
-                          </Badge>
-                        )}
-                        {event.participants && event.participants.length > 0 && (
-                          <Badge variant="outline" className="bg-gray-100">
-                            {event.participants.length} participant(s)
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <p>Aucun événement prévu pour cette journée</p>
-                <Button variant="outline" className="mt-4" onClick={onAddEvent}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un événement
-                </Button>
-              </div>
-            )}
+                    )}
+                  </div>
+                  {event.description && <p className="text-sm text-muted-foreground mt-1">{event.description}</p>}
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Grille horaire */}
+        <div className="grid grid-cols-[auto,1fr] gap-4">
+          {hours.map((hour) => {
+            const hourEvents = getEventsForHour(hour)
+
+            return (
+              <React.Fragment key={hour}>
+                {/* Colonne des heures */}
+                <div className="text-right py-2 text-sm text-muted-foreground">{hour}:00</div>
+
+                {/* Cellule pour les événements */}
+                <div className="relative border-t min-h-[80px]">
+                  {hourEvents.map((event) => {
+                    const position = getEventPosition(event, hour)
+
+                    return (
+                      <div
+                        key={event.id}
+                        className="absolute left-0 right-0 px-2 py-1 rounded cursor-pointer"
+                        style={{
+                          backgroundColor: `${getEventColor(event)}20`,
+                          borderLeft: `3px solid ${getEventColor(event)}`,
+                          top: position.top,
+                          height: position.height,
+                          zIndex: 10,
+                        }}
+                        onClick={() => setSelectedEvent(event)}
+                      >
+                        <div className="font-medium">{event.title}</div>
+                        <div className="text-sm">{formatEventTime(event)}</div>
+                        {event.location && (
+                          <div className="text-sm flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" /> {event.location}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </React.Fragment>
+            )
+          })}
         </div>
       </div>
 
-      {/* Event Details Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          {selectedEvent && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl">{selectedEvent.title}</DialogTitle>
-                  <Badge variant="outline" className={getEventTypeColor(selectedEvent.type)}>
-                    {getEventTypeLabel(selectedEvent.type)}
-                  </Badge>
+        {selectedEvent && (
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <Badge style={{ backgroundColor: getEventColor(selectedEvent) }} className="text-white">
+                  {getEventTypeLabel(selectedEvent.type)}
+                </Badge>
+                <DialogTitle>{selectedEvent.title}</DialogTitle>
+              </div>
+              {selectedEvent.description && <DialogDescription>{selectedEvent.description}</DialogDescription>}
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Date et heure</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(selectedEvent.start), "EEEE d MMMM yyyy", { locale: fr })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{formatEventTime(selectedEvent)}</p>
                 </div>
-                <DialogDescription>
-                  {format(parseISO(selectedEvent.date), "EEEE d MMMM yyyy", { locale: fr })}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
+              </div>
+
+              {selectedEvent.location && (
                 <div className="flex items-start gap-2">
-                  <Clock className="h-5 w-5 text-gray-500 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Horaire</p>
-                    <p>
-                      {selectedEvent.startTime} - {selectedEvent.endTime}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Lieu</p>
-                    <p>{selectedEvent.location}</p>
+                    <p className="text-sm text-muted-foreground">{selectedEvent.location}</p>
                   </div>
                 </div>
-                {selectedEvent.description && (
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Description</p>
-                      <p>{selectedEvent.description}</p>
+              )}
+
+              {selectedEvent.participants && selectedEvent.participants.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Users className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Participants</p>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedEvent.participants.map((participant, index) => (
+                        <p key={index}>{participant}</p>
+                      ))}
                     </div>
                   </div>
-                )}
-                {selectedEvent.classId && (
-                  <div className="flex items-start gap-2">
-                    <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Classe</p>
-                      <p>{selectedEvent.classId}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedEvent.participants && selectedEvent.participants.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Participants</p>
-                      <p>{selectedEvent.participants.join(", ")}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    onDeleteEvent(selectedEvent.id)
-                    setSelectedEvent(null)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
-                </Button>
-                <Button onClick={() => setSelectedEvent(null)}>Fermer</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                Fermer
+              </Button>
+              <Button>Modifier</Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
       </Dialog>
     </>
   )

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { format, addDays, parseISO, isSameDay } from "date-fns"
+import React, { useState } from "react"
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, setHours, setMinutes } from "date-fns"
 import { fr } from "date-fns/locale"
-import type { Event } from "@/types/calendar"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
@@ -14,243 +14,250 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Trash2, MapPin, Clock, CalendarIcon, Info } from "lucide-react"
+import { Clock, MapPin, Users } from "lucide-react"
+import type { CalendarEvent } from "./calendar-content"
 
 interface CalendarWeekViewProps {
   currentDate: Date
-  selectedDate: Date
-  events: Event[]
-  onSelectDate: (date: Date) => void
-  onDeleteEvent: (id: string) => void
+  events: CalendarEvent[]
 }
 
-export default function CalendarWeekView({
-  currentDate,
-  selectedDate,
-  events,
-  onSelectDate,
-  onDeleteEvent,
-}: CalendarWeekViewProps) {
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+export function CalendarWeekView({ currentDate, events }: CalendarWeekViewProps) {
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  // Get days for the current week view
-  const weekStart = (() => {
-    const day = new Date(currentDate)
-    const diff = day.getDate() - (day.getDay() === 0 ? 6 : day.getDay() - 1)
-    return new Date(day.setDate(diff))
-  })()
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  // Heures de début et de fin de la journée
+  const dayStartHour = 8
+  const dayEndHour = 18
 
-  // Get event type color
-  const getEventTypeColor = (type: Event["type"]) => {
-    switch (type) {
-      case "class":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-200"
-      case "meeting":
-        return "bg-purple-100 text-purple-800 hover:bg-purple-200"
-      case "event":
-        return "bg-green-100 text-green-800 hover:bg-green-200"
-      case "exam":
-        return "bg-red-100 text-red-800 hover:bg-red-200"
-      case "holiday":
-        return "bg-amber-100 text-amber-800 hover:bg-amber-200"
+  // Générer les heures
+  const hours = Array.from({ length: dayEndHour - dayStartHour + 1 }, (_, i) => dayStartHour + i)
+
+  const getEventsForDayAndHour = (day: Date, hour: number) => {
+    const hourStart = setMinutes(setHours(new Date(day), hour), 0)
+    const hourEnd = setMinutes(setHours(new Date(day), hour + 1), 0)
+
+    return events.filter((event) => {
+      const eventStart = new Date(event.start)
+      const eventEnd = new Date(event.end)
+
+      // Vérifier si l'événement est dans cette heure
+      return (eventStart <= hourEnd && eventEnd >= hourStart) || (event.allDay && isSameDay(day, eventStart))
+    })
+  }
+
+  const getEventColor = (event: CalendarEvent) => {
+    if (event.color) return event.color
+
+    switch (event.type) {
+      case "cours":
+        return "#c83e3e"
+      case "reunion":
+        return "#3e8ac8"
+      case "examen":
+        return "#e67e22"
+      case "evenement":
+        return "#9b59b6"
+      case "conge":
+        return "#2ecc71"
       default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+        return "#64748b"
     }
   }
 
-  // Get event type label
-  const getEventTypeLabel = (type: Event["type"]) => {
+  const getEventTypeLabel = (type: string) => {
     switch (type) {
-      case "class":
+      case "cours":
         return "Cours"
-      case "meeting":
+      case "reunion":
         return "Réunion"
-      case "event":
-        return "Événement"
-      case "exam":
+      case "examen":
         return "Examen"
-      case "holiday":
+      case "evenement":
+        return "Événement"
+      case "conge":
         return "Congé"
       default:
-        return "Autre"
+        return type
     }
   }
 
-  // Hours for the week view
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8) // 8:00 to 19:00
+  const formatEventTime = (event: CalendarEvent) => {
+    if (event.allDay) return "Toute la journée"
+    return `${format(new Date(event.start), "HH:mm")} - ${format(new Date(event.end), "HH:mm")}`
+  }
+
+  const getEventPosition = (event: CalendarEvent, hour: number) => {
+    const eventStart = new Date(event.start)
+    const eventEnd = new Date(event.end)
+
+    const hourStart = setMinutes(setHours(new Date(eventStart), hour), 0)
+    const hourEnd = setMinutes(setHours(new Date(eventStart), hour + 1), 0)
+
+    // Calculer la position de début (en pourcentage de l'heure)
+    let startPercent = 0
+    if (eventStart > hourStart) {
+      const diffMinutes = (eventStart.getTime() - hourStart.getTime()) / (1000 * 60)
+      startPercent = (diffMinutes / 60) * 100
+    }
+
+    // Calculer la hauteur (en pourcentage de l'heure)
+    let heightPercent = 100
+    if (eventEnd < hourEnd) {
+      const diffMinutes = (eventEnd.getTime() - hourStart.getTime()) / (1000 * 60)
+      heightPercent = (diffMinutes / 60) * 100
+    } else if (eventStart > hourStart) {
+      const diffMinutes = (hourEnd.getTime() - eventStart.getTime()) / (1000 * 60)
+      heightPercent = (diffMinutes / 60) * 100
+    }
+
+    return {
+      top: `${startPercent}%`,
+      height: `${heightPercent}%`,
+    }
+  }
 
   return (
     <>
-      <div className="p-6 overflow-auto">
-        <div className="min-w-[800px]">
-          {/* Days of week header */}
-          <div className="grid grid-cols-8 gap-1 text-center border-b border-[#f5f0e8] pb-2">
-            <div className="py-2 font-medium text-sm"></div> {/* Empty cell for hours column */}
-            {weekDays.map((day) => (
-              <div
-                key={day.toString()}
-                className={`py-2 font-medium ${isSameDay(day, selectedDate) ? "text-[#c83e3e]" : ""}`}
-                onClick={() => onSelectDate(day)}
-              >
-                <div className="text-sm">{format(day, "EEE", { locale: fr })}</div>
-                <div
-                  className={`text-lg ${isSameDay(day, new Date()) ? "bg-[#c83e3e] text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto" : ""}`}
-                >
-                  {format(day, "d", { locale: fr })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Hours and events */}
-          <div className="grid grid-cols-8 gap-1 mt-2">
-            {/* Hours column */}
-            <div className="space-y-16">
-              {hours.map((hour) => (
-                <div key={hour} className="text-xs text-gray-500 text-right pr-2 pt-2">
-                  {hour}:00
-                </div>
-              ))}
+      <div className="grid grid-cols-[auto,1fr,1fr,1fr,1fr,1fr,1fr,1fr] gap-1">
+        {/* En-tête avec les jours */}
+        <div className="h-12"></div> {/* Cellule vide pour l'alignement */}
+        {days.map((day) => (
+          <div
+            key={day.toString()}
+            className={`text-center py-2 font-medium ${isSameDay(day, new Date()) ? "bg-primary/10 rounded-t-md" : ""}`}
+          >
+            <div>{format(day, "EEE", { locale: fr })}</div>
+            <div
+              className={`inline-block rounded-full w-7 h-7 text-center leading-7 ${
+                isSameDay(day, new Date()) ? "bg-primary text-primary-foreground" : ""
+              }`}
+            >
+              {format(day, "d")}
             </div>
+          </div>
+        ))}
+        {/* Grille des heures */}
+        {hours.map((hour) => (
+          <React.Fragment key={hour}>
+            {/* Colonne des heures */}
+            <div className="text-right pr-2 py-1 text-sm text-muted-foreground border-t">{hour}:00</div>
 
-            {/* Days columns */}
-            {weekDays.map((day) => {
-              const dayEvents = events.filter((event) => isSameDay(parseISO(event.date), day))
+            {/* Cellules pour chaque jour */}
+            {days.map((day) => {
+              const dayEvents = getEventsForDayAndHour(day, hour)
+              const isToday = isSameDay(day, new Date())
 
               return (
                 <div
-                  key={day.toString()}
-                  className={`relative border-l border-[#f5f0e8] min-h-[800px] ${
-                    isSameDay(day, selectedDate) ? "bg-[#c83e3e]/5" : ""
-                  }`}
-                  onClick={() => onSelectDate(day)}
+                  key={`${day}-${hour}`}
+                  className={`relative border-t min-h-[60px] ${isToday ? "bg-primary/5" : ""}`}
                 >
-                  {/* Hour grid lines */}
-                  {hours.map((hour) => (
-                    <div
-                      key={hour}
-                      className="absolute w-full border-t border-[#f5f0e8] pointer-events-none"
-                      style={{ top: `${(hour - 8) * 4}rem` }}
-                    ></div>
-                  ))}
-
-                  {/* Events */}
                   {dayEvents.map((event) => {
-                    const startHour = Number.parseInt(event.startTime.split(":")[0])
-                    const startMinute = Number.parseInt(event.startTime.split(":")[1])
-                    const endHour = Number.parseInt(event.endTime.split(":")[0])
-                    const endMinute = Number.parseInt(event.endTime.split(":")[1])
-
-                    const top = (startHour - 8) * 4 + (startMinute / 60) * 4
-                    const height = (endHour - startHour) * 4 + ((endMinute - startMinute) / 60) * 4
+                    const position = getEventPosition(event, hour)
 
                     return (
-                      <div
-                        key={event.id}
-                        className={`absolute left-1 right-1 rounded-md p-2 overflow-hidden shadow-sm cursor-pointer ${getEventTypeColor(
-                          event.type,
-                        )}`}
-                        style={{ top: `${top}rem`, height: `${height}rem` }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedEvent(event)
-                        }}
-                      >
-                        <div className="font-medium text-xs truncate">{event.title}</div>
-                        <div className="text-xs truncate">
-                          {event.startTime} - {event.endTime}
-                        </div>
-                        <div className="text-xs truncate">{event.location}</div>
-                      </div>
+                      <TooltipProvider key={event.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="absolute left-0 right-0 mx-1 px-1 py-0.5 rounded text-xs overflow-hidden cursor-pointer"
+                              style={{
+                                backgroundColor: `${getEventColor(event)}20`,
+                                borderLeft: `3px solid ${getEventColor(event)}`,
+                                top: position.top,
+                                height: position.height,
+                                zIndex: 10,
+                              }}
+                              onClick={() => setSelectedEvent(event)}
+                            >
+                              <div className="font-medium truncate">{event.title}</div>
+                              {!event.allDay && <div className="truncate">{formatEventTime(event)}</div>}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="space-y-1">
+                              <p className="font-medium">{event.title}</p>
+                              <p className="text-xs">{formatEventTime(event)}</p>
+                              {event.location && (
+                                <p className="text-xs flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1" /> {event.location}
+                                </p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )
                   })}
                 </div>
               )
             })}
-          </div>
-        </div>
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Event Details Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          {selectedEvent && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl">{selectedEvent.title}</DialogTitle>
-                  <Badge variant="outline" className={getEventTypeColor(selectedEvent.type)}>
-                    {getEventTypeLabel(selectedEvent.type)}
-                  </Badge>
+        {selectedEvent && (
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <Badge style={{ backgroundColor: getEventColor(selectedEvent) }} className="text-white">
+                  {getEventTypeLabel(selectedEvent.type)}
+                </Badge>
+                <DialogTitle>{selectedEvent.title}</DialogTitle>
+              </div>
+              {selectedEvent.description && <DialogDescription>{selectedEvent.description}</DialogDescription>}
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Date et heure</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(selectedEvent.start), "EEEE d MMMM yyyy", { locale: fr })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{formatEventTime(selectedEvent)}</p>
                 </div>
-                <DialogDescription>
-                  {format(parseISO(selectedEvent.date), "EEEE d MMMM yyyy", { locale: fr })}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
+              </div>
+
+              {selectedEvent.location && (
                 <div className="flex items-start gap-2">
-                  <Clock className="h-5 w-5 text-gray-500 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Horaire</p>
-                    <p>
-                      {selectedEvent.startTime} - {selectedEvent.endTime}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Lieu</p>
-                    <p>{selectedEvent.location}</p>
+                    <p className="text-sm text-muted-foreground">{selectedEvent.location}</p>
                   </div>
                 </div>
-                {selectedEvent.description && (
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Description</p>
-                      <p>{selectedEvent.description}</p>
+              )}
+
+              {selectedEvent.participants && selectedEvent.participants.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Users className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Participants</p>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedEvent.participants.map((participant, index) => (
+                        <p key={index}>{participant}</p>
+                      ))}
                     </div>
                   </div>
-                )}
-                {selectedEvent.classId && (
-                  <div className="flex items-start gap-2">
-                    <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Classe</p>
-                      <p>{selectedEvent.classId}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedEvent.participants && selectedEvent.participants.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Participants</p>
-                      <p>{selectedEvent.participants.join(", ")}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    onDeleteEvent(selectedEvent.id)
-                    setSelectedEvent(null)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
-                </Button>
-                <Button onClick={() => setSelectedEvent(null)}>Fermer</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                Fermer
+              </Button>
+              <Button>Modifier</Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
       </Dialog>
     </>
   )

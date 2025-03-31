@@ -1,17 +1,47 @@
-export type EventType = "class" | "meeting" | "event" | "exam" | "holiday"
+export type EventType = "cours" | "reunion" | "examen" | "evenement" | "conge"
 
-export interface Event {
+export interface CalendarEvent {
   id: string
   title: string
-  date: string
-  startTime: string
-  endTime: string
-  location: string
-  description: string
+  description?: string
+  start: Date
+  end: Date
+  allDay?: boolean
   type: EventType
-  classId?: string
-  classIds?: string[]
-  teacherId?: string
+  location?: string
   participants?: string[]
+  color?: string
+  recurrence?: {
+    frequency: "daily" | "weekly" | "monthly" | "yearly"
+    interval: number
+    endDate?: Date
+    count?: number
+  }
+}
+
+export interface CalendarDay {
+  date: Date
+  events: CalendarEvent[]
+  isCurrentMonth: boolean
+  isToday: boolean
+}
+
+export interface CalendarWeek {
+  days: CalendarDay[]
+}
+
+export interface CalendarMonth {
+  weeks: CalendarWeek[]
+}
+
+export interface TimeSlot {
+  start: string
+  end: string
+}
+
+export interface DaySchedule {
+  date: Date
+  timeSlots: TimeSlot[]
+  events: CalendarEvent[]
 }
 

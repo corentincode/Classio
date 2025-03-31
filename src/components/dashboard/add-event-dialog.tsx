@@ -1,277 +1,163 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
 import { format } from "date-fns"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Event } from "@/types/calendar"
-
-// Form schema
-const eventSchema = z.object({
-  title: z.string().min(2, { message: "Le titre doit contenir au moins 2 caractères" }),
-  date: z.string().min(1, { message: "La date est requise" }),
-  startTime: z.string().min(1, { message: "L'heure de début est requise" }),
-  endTime: z.string().min(1, { message: "L'heure de fin est requise" }),
-  location: z.string().min(1, { message: "Le lieu est requis" }),
-  description: z.string().optional(),
-  type: z.enum(["class", "meeting", "event", "exam", "holiday"]),
-  classId: z.string().optional(),
-  teacherId: z.string().optional(),
-  participants: z.array(z.string()).optional(),
-})
-
-type EventFormValues = z.infer<typeof eventSchema>
+import { Checkbox } from "@/components/ui/checkbox"
+import type { CalendarEvent, EventType } from "./calendar-content"
 
 interface AddEventDialogProps {
-  isOpen: boolean
+  open: boolean
   onOpenChange: (open: boolean) => void
-  onAddEvent: (event: Omit<Event, "id">) => void
-  isLoading: boolean
-  selectedDate: Date
+  currentDate?: Date
 }
 
-export default function AddEventDialog({
-  isOpen,
-  onOpenChange,
-  onAddEvent,
-  isLoading,
-  selectedDate,
-}: AddEventDialogProps) {
-  const [error, setError] = useState<string | null>(null)
+export function AddEventDialog({ open, onOpenChange, currentDate = new Date() }: AddEventDialogProps) {
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [date, setDate] = useState(format(currentDate, "yyyy-MM-dd"))
+  const [startTime, setStartTime] = useState("08:00")
+  const [endTime, setEndTime] = useState("09:00")
+  const [location, setLocation] = useState("")
+  const [participants, setParticipants] = useState("")
+  const [eventType, setEventType] = useState<EventType>("cours")
+  const [allDay, setAllDay] = useState(false)
 
-  const form = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: "",
-      date: format(selectedDate, "yyyy-MM-dd"),
-      startTime: "08:00",
-      endTime: "09:00",
-      location: "",
-      description: "",
-      type: "class",
-      classId: "",
-      teacherId: "",
-      participants: [],
-    },
-  })
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
 
-  // Update date when selectedDate changes
-  useState(() => {
-    form.setValue("date", format(selectedDate, "yyyy-MM-dd"))
-  })
+    const start = new Date(`${date}T${startTime}:00`)
+    const end = new Date(`${date}T${endTime}:00`)
 
-  function onSubmit(values: EventFormValues) {
-    setError(null)
-
-    try {
-      onAddEvent(values)
-      form.reset({
-        title: "",
-        date: format(selectedDate, "yyyy-MM-dd"),
-        startTime: "08:00",
-        endTime: "09:00",
-        location: "",
-        description: "",
-        type: "class",
-        classId: "",
-        teacherId: "",
-        participants: [],
-      })
-    } catch (error) {
-      setError("Une erreur est survenue. Veuillez réessayer.")
+    const newEvent: CalendarEvent = {
+      id: Date.now().toString(),
+      title,
+      description: description || undefined,
+      start,
+      end,
+      type: eventType,
+      location: location || undefined,
+      participants: participants ? participants.split(",").map((p) => p.trim()) : undefined,
     }
+
+    // Ici, vous pourriez ajouter l'événement à votre état ou l'envoyer à une API
+    console.log("Nouvel événement créé:", newEvent)
+
+    resetForm()
+    onOpenChange(false)
+  }
+
+  const resetForm = () => {
+    setTitle("")
+    setDescription("")
+    setDate(format(currentDate, "yyyy-MM-dd"))
+    setStartTime("08:00")
+    setEndTime("09:00")
+    setLocation("")
+    setParticipants("")
+    setEventType("cours")
+    setAllDay(false)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1 bg-[#c83e3e] hover:bg-[#b53535]">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Ajouter un événement</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Ajouter un événement</DialogTitle>
-          <DialogDescription>
-            Créez un nouvel événement dans le calendrier. Remplissez tous les champs requis.
-          </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Titre</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Cours de mathématiques" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Titre *</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </div>
 
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="class">Cours</SelectItem>
-                        <SelectItem value="meeting">Réunion</SelectItem>
-                        <SelectItem value="event">Événement</SelectItem>
-                        <SelectItem value="exam">Examen</SelectItem>
-                        <SelectItem value="holiday">Congé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date *</Label>
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Heure de début</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Heure de fin</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <Label htmlFor="type">Type *</Label>
+              <Select value={eventType} onValueChange={(value) => setEventType(value as EventType)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cours">Cours</SelectItem>
+                  <SelectItem value="reunion">Réunion</SelectItem>
+                  <SelectItem value="examen">Examen</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lieu</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Salle 102" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="flex items-center space-x-2">
+            <Checkbox id="allDay" checked={allDay} onCheckedChange={(checked) => setAllDay(checked === true)} />
+            <Label htmlFor="allDay">Toute la journée</Label>
+          </div>
 
-            {form.watch("type") === "class" && (
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="classId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Classe</FormLabel>
-                      <FormControl>
-                        <Input placeholder="3ème B" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="teacherId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enseignant</FormLabel>
-                      <FormControl>
-                        <Input placeholder="M. Dupont" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+          {!allDay && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Heure de début *</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  required={!allDay}
                 />
               </div>
-            )}
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Description de l'événement..." className="resize-none" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Heure de fin *</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  required={!allDay}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Lieu</Label>
+            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="participants">Participants (séparés par des virgules)</Label>
+            <Input
+              id="participants"
+              value={participants}
+              onChange={(e) => setParticipants(e.target.value)}
+              placeholder="Ex: M. Dupont, Classe Seconde A"
             />
+          </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)} type="button">
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isLoading} className="bg-[#c83e3e] hover:bg-[#b53535]">
-                {isLoading ? "Création en cours..." : "Ajouter"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button type="submit">Ajouter</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

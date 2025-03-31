@@ -35,7 +35,13 @@ async function getEtablissement(id: string) {
   }
 }
 
-export default async function EtablissementDetailPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: {
+    id: string
+  }
+}
+
+export default async function EtablissementDetailPage({ params }: PageProps) {
   const etablissement = await getEtablissement(params.id)
 
   if (!etablissement) {
