@@ -35,7 +35,8 @@ async function getEtablissement(id: string) {
   }
 }
 
-interface PageProps {
+// Correction du type PageProps pour correspondre aux attentes de Next.js
+type PageProps = {
   params: {
     id: string
   }
