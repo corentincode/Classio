@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import DocumentsContent from "@/components/dashboard/documents-content"
+import DocumentsContent from "@/components/dashboard/admin/documents/documents-content"
 
 export const metadata: Metadata = {
   title: "Documents | Classio Dashboard",

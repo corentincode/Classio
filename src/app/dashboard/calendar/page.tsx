@@ -1,5 +1,5 @@
 import PageReveal from "@/components/animations/page-reveal"
-import CalendarContent from "@/components/dashboard/calendar-content"
+import CalendarContent from "@/components/dashboard/admin/calendar/calendar-content"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {

@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { PerformanceChart } from "@/components/dashboard/performance-chart"
-import { AttendanceChart } from "@/components/dashboard/attendance-chart"
-import { GradesDistribution } from "@/components/dashboard/grades-distribution"
-import { ActivityTimeline } from "@/components/dashboard/activity-timeline"
-import { ReportTable } from "@/components/dashboard/report-table"
+import { PerformanceChart } from "@/components/dashboard/admin/reports/performance-chart"
+import { AttendanceChart } from "@/components/dashboard/admin/reports/attendance-chart"
+import { GradesDistribution } from "@/components/dashboard/admin/reports/grades-distribution"
+import { ActivityTimeline } from "@/components/dashboard/admin/reports/activity-timeline"
+import { ReportTable } from "@/components/dashboard/admin/reports/report-table"
 
 export function ReportsContent() {
   const [dateRange, setDateRange] = useState("month")
