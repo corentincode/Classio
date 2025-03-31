@@ -1,5 +1,11 @@
-import EtablissementsView from "@/components/dashboard/admin/etablissement/etablisements-view"
-export default function EtablissementsPage() {
+import PageReveal from "@/components/animations/page-reveal"
+import EtablissementsContent from "@/components/dashboard/admin/etablissement/etablisements-view"
 
-  return <EtablissementsView />
+export default function EtablissementsPage() {
+  return (
+    <PageReveal>
+      <EtablissementsContent />
+    </PageReveal>
+  )
 }
+

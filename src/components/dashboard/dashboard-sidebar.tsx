@@ -100,37 +100,6 @@ export default function DashboardSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <Collapsible open={openMenus.classes} onOpenChange={() => toggleMenu("classes")} className="w-full">
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton>
-                  <BookOpen className="h-4 w-4" />
-                  <span>Classes & Notes</span>
-                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/classes")}>
-                      <Link href="/dashboard/classes">Toutes les classes</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/grades")}>
-                      <Link href="/dashboard/grades">Gestion des notes</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/assignments")}>
-                      <Link href="/dashboard/assignments">Devoirs & Rendus</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/dashboard/attendance")}>
               <Link href="/dashboard/attendance">
@@ -139,41 +108,6 @@ export default function DashboardSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
-          <Collapsible
-            open={openMenus.communications}
-            onOpenChange={() => toggleMenu("communications")}
-            className="w-full"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton>
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Communication</span>
-                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/messages")}>
-                      <Link href="/dashboard/messages">Messages</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/announcements")}>
-                      <Link href="/dashboard/announcements">Annonces</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild isActive={isActive("/dashboard/meetings")}>
-                      <Link href="/dashboard/meetings">Réunions</Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/dashboard/users")}>
@@ -208,7 +142,7 @@ export default function DashboardSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
-              <Link href="/dashboard/settings">
+              <Link href="/dashboard/parametres">
                 <Settings className="h-4 w-4" />
                 <span>Paramètres</span>
               </Link>
@@ -225,15 +159,6 @@ export default function DashboardSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
           )}
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/profile")}>
-              <Link href="/dashboard/profile">
-                <User className="h-4 w-4" />
-                <span>Mon profil</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
 
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => signOut({ callbackUrl: "/signout" })}>

@@ -1,5 +1,11 @@
-import CalendarView from "@/components/dashboard/calendar-view"
+import PageReveal from "@/components/animations/page-reveal"
+import CalendarContent from "@/components/dashboard/calendar-content"
 
 export default function CalendarPage() {
-  return <CalendarView />
+  return (
+    <PageReveal>
+      <CalendarContent />
+    </PageReveal>
+  )
 }
+

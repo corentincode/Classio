@@ -1,50 +1,51 @@
-// app/etablissement/[id]/page.tsx
-import {prisma} from '@/lib/prisma'
-import { notFound } from 'next/navigation'
-import React from "react";
-import {Button} from "@/components/ui/button";
-import Link from "next/link";
-import {Plus} from "lucide-react";
-import {EtablissementsIdView} from "@/components/dashboard/admin/etablissement/[id]/etablissements-id-view";
-import type {NextRequest} from "next/server";
+import { notFound } from "next/navigation"
+import PageReveal from "@/components/animations/page-reveal"
+import EtablissementDetailContent from "@/components/dashboard/admin/etablissement/etablissement-detail-content"
 
-
-type Etablissement = {
-    id: string
-    nom: string
-    sousDomaine: string
-    classes: Classe[]
-    users: User[]
-}
-
-type Classe = {
-    id: string
-    nom: string
-}
-
-type User = {
-    id: string
-    name: string | null
-    email: string | null
-}
-
-export default async function EtablissementIdPage({ params }: { params:  Promise<{ id: string;  }> }) {
-
-
-    const resolvedParams = await params
-    const { id: etablissementId } = resolvedParams
-
-    const etablissements: Etablissement | null = await prisma.etablissement.findUnique({
-        where: { id: etablissementId },
-        include: {
-            classes: true,
-            users: true,
-        },
-    })
-
-    if (!etablissements) {
-        notFound()
+// Cette fonction serait remplacée par votre véritable fonction de récupération de données
+async function getEtablissement(id: string) {
+  // Simulation de récupération de données - à remplacer par votre code réel
+  try {
+    // Remplacer par votre appel à Prisma
+    const etablissement = {
+      id,
+      nom: "Lycée Jean Moulin",
+      sousDomaine: "jean-moulin",
+      adresse: "123 Rue de l'Éducation",
+      ville: "Paris",
+      codePostal: "75001",
+      telephone: "01 23 45 67 89",
+      email: "contact@jean-moulin.edu",
+      logo: "/placeholder.svg?height=100&width=100",
+      classes: [
+        { id: "1", nom: "Seconde A" },
+        { id: "2", nom: "Seconde B" },
+        { id: "3", nom: "Première S" },
+        { id: "4", nom: "Terminale S" },
+      ],
+      users: [
+        { id: "1", name: "Jean Dupont", email: "jean@example.com", role: "ADMIN" },
+        { id: "2", name: "Marie Martin", email: "marie@example.com", role: "TEACHER" },
+        { id: "3", name: "Pierre Durand", email: "pierre@example.com", role: "TEACHER" },
+      ],
     }
-
-    return <EtablissementsIdView etablissements={etablissements}/>
+    return etablissement
+  } catch (error) {
+    return null
+  }
 }
+
+export default async function EtablissementDetailPage({ params }: { params: { id: string } }) {
+  const etablissement = await getEtablissement(params.id)
+
+  if (!etablissement) {
+    notFound()
+  }
+
+  return (
+    <PageReveal>
+      <EtablissementDetailContent etablissement={etablissement} />
+    </PageReveal>
+  )
+}
+
