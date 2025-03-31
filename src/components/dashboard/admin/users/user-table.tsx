@@ -13,17 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: string
-  avatar: string
-  joinedAt: string
-  lastActive: string
-  [key: string]: any
-}
+import type { User } from "./users-content"
 
 interface UserTableProps {
   users: User[]
@@ -38,10 +28,13 @@ export default function UserTable({ users, onUserSelect }: UserTableProps) {
 
   // Fonction pour trier les utilisateurs
   const sortUsers = (a: User, b: User) => {
-    if (a[sortField] < b[sortField]) {
+    const valueA = a[sortField] ?? ""
+    const valueB = b[sortField] ?? ""
+
+    if (valueA < valueB) {
       return sortDirection === "asc" ? -1 : 1
     }
-    if (a[sortField] > b[sortField]) {
+    if (valueA > valueB) {
       return sortDirection === "asc" ? 1 : -1
     }
     return 0
@@ -122,7 +115,7 @@ export default function UserTable({ users, onUserSelect }: UserTableProps) {
               <tr
                 key={user.id}
                 className="border-t border-[#f5f0e8] hover:bg-[#f5f0e8]/10 cursor-pointer"
-                onClick={() => onUserSelect(user)}
+                onClick={() => onUserSelect({ ...user, phone: user.phone || "" })}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -178,7 +171,7 @@ export default function UserTable({ users, onUserSelect }: UserTableProps) {
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation()
-                          onUserSelect(user)
+                          onUserSelect({ ...user, phone: user.phone || "" })
                         }}
                       >
                         Voir le profil

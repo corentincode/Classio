@@ -10,8 +10,29 @@ import UserTable from "./user-table"
 import AddUserDialog from "./add-user-dialog"
 import UserDetailsDialog from "./user-details-dialog"
 
+// Export the User interface so it can be imported by other files
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+  status: string
+  avatar: string
+  joinedAt: string
+  lastActive: string
+  phone: string
+  // Optional properties for different user roles
+  subject?: string
+  classes?: string[]
+  grade?: string
+  parents?: string[]
+  department?: string
+}
+
+// Make sure the rest of the file uses this interface consistently
+
 // Données fictives pour les utilisateurs
-const users = [
+const users: User[] = [
   {
     id: "1",
     name: "Sophie Martin",
@@ -119,7 +140,7 @@ const users = [
 export default function UsersContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddUserOpen, setIsAddUserOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<(typeof users)[0] | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("all")
 
   // Filtrer les utilisateurs en fonction des critères

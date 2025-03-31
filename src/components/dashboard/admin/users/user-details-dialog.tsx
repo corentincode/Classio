@@ -6,18 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: string
-  avatar: string
-  joinedAt: string
-  lastActive: string
-  [key: string]: any
-}
+// Import the User interface from users-content.tsx
+import type { User } from "./users-content"
 
 interface UserDetailsDialogProps {
   user: User | null
