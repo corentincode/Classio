@@ -72,7 +72,7 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
   // Fonction pour rafraîchir les classes après ajout
   const refreshClasses = async () => {
     try {
-        const response = await fetch(`/api/admin/etablissement/${etablissements.id}/classes`)
+        const response = await fetch(`/api/admin/etablissement/${etablissement.id}/classes`)
         if (response.ok) {
             const data = await response.json()
             setClasses(data)
