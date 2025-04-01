@@ -6,9 +6,28 @@ import { signInSchema } from "@/lib/zod"
 
 const prisma = new PrismaClient()
 
-// Ajoute ceci au début de ton fichier (auth.ts)
-
-
+// Fonction pour obtenir le domaine de base à partir de l'URL
+function getBaseUrl(url: string | undefined) {
+  if (!url) return process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  
+  try {
+    const urlObj = new URL(url)
+    const hostname = urlObj.hostname
+    
+    // Vérifier si c'est un sous-domaine de classio.fr
+    if (hostname.endsWith('.classio.fr')) {
+      // Extraire le domaine de base (classio.fr)
+      const parts = hostname.split('.')
+      const baseDomain = parts.slice(-2).join('.')
+      return `${urlObj.protocol}//${baseDomain}`
+    }
+    
+    return url
+  } catch (error) {
+    console.error('Erreur lors de l\'analyse de l\'URL:', error)
+    return process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  }
+}
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
     providers: [
@@ -25,7 +44,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                     // Find user in database
                     const user = await prisma.user.findUnique({
                         where: { email },
-                        select: { id: true, email: true, name: true, password: true, role: true, image: true },
+                        select: { id: true, email: true, name: true, password: true, role: true, image: true, etablissementId: true },
                     })
 
                     // If no user found or password doesn't match
@@ -47,6 +66,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                         name: user.name,
                         role: user.role,
                         image: user.image,
+                        etablissementId: user.etablissementId,
                     }
                 } catch (error) {
                     console.error("Authentication error:", error)
@@ -61,16 +81,20 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.role = user.role;
-                token.id = user.id;
+                // Utiliser des opérateurs de coalescence nullish pour gérer les valeurs undefined
+                token.id = user.id ?? token.id;
+                token.role = user.role ?? token.role;
+                token.etablissementId = user.etablissementId ?? token.etablissementId;
                 console.log("User JWT callback", { user }); // <-- vérification
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                session.user.id = token.id as string;
-                session.user.role = token.role as string;
+                // Utiliser des opérateurs de coalescence nullish pour gérer les valeurs undefined
+                session.user.id = token.id ?? session.user.id;
+                session.user.role = token.role ?? session.user.role;
+                session.user.etablissementId = token.etablissementId ?? session.user.etablissementId;
                 console.log("Session callback", { session }); // <-- vérification
             }
             return session;
@@ -80,5 +104,61 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         signIn: "/sign-in",
         error: "/",
     },
+    // Ajouter cette configuration pour les cookies
+    cookies: {
+        sessionToken: {
+            name: `next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NODE_ENV === "production" ? ".classio.fr" : undefined,
+            },
+        },
+        callbackUrl: {
+            name: `next-auth.callback-url`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NODE_ENV === "production" ? ".classio.fr" : undefined,
+            },
+        },
+        csrfToken: {
+            name: `next-auth.csrf-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                domain: process.env.NODE_ENV === "production" ? ".classio.fr" : undefined,
+            },
+        },
+    },
 })
 
+// Exporter une fonction pour vérifier si un utilisateur a accès à un établissement
+export async function hasAccessToEtablissement(userId: string, etablissementId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { 
+                etablissementId: true,
+                role: true 
+            },
+        })
+        
+        // Les super admins ont accès à tous les établissements
+        if (user?.role === 'SUPER_ADMIN') {
+            return true
+        }
+        
+        // Vérifier si l'utilisateur appartient à cet établissement
+        return user?.etablissementId === etablissementId
+    } catch (error) {
+        console.error('Erreur lors de la vérification des accès:', error)
+        return false
+    }
+}
