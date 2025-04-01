@@ -101,6 +101,9 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
         email: emailRef.current?.value || null,
       }
 
+      console.log("Envoi des données:", updatedData)
+      console.log("URL:", `/api/admin/etablissement/${etablissement.id}`)
+
       const response = await fetch(`/api/admin/etablissement/${etablissement.id}`, {
         method: "PATCH",
         headers: {
@@ -109,8 +112,19 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
         body: JSON.stringify(updatedData),
       })
 
+      console.log("Statut de la réponse:", response.status)
+
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorText = await response.text()
+        console.error("Réponse d'erreur brute:", errorText)
+
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch (e) {
+          throw new Error(`Erreur ${response.status}: ${response.statusText}`)
+        }
+
         throw new Error(errorData.message || "Erreur lors de la mise à jour de l'établissement")
       }
 

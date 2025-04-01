@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
+
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { z } from "zod"
@@ -20,31 +21,15 @@ const etablissementUpdateSchema = z.object({
   telephone: z.string().nullable().optional(),
 })
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const etablissement = await prisma.etablissement.findUnique({
-      where: { id: params.id },
-      include: {
-        users: true,
-        classes: true,
-      },
-    })
-
-    if (!etablissement) {
-      return NextResponse.json({ message: "Établissement non trouvé" }, { status: 404 })
+type Params = {
+    params: {
+      id: string
     }
-
-    return NextResponse.json(etablissement)
-  } catch (error) {
-    console.error("Error fetching etablissement:", error)
-    return NextResponse.json(
-      { message: "Une erreur est survenue lors de la récupération de l'établissement" },
-      { status: 500 },
-    )
   }
-}
+  
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+
+export async function PATCH(request: NextRequest,{ params }: { params:  Promise<{ id: string}> }) {
   try {
     // Commentez temporairement la vérification d'authentification pour tester
     // const session = await auth()
@@ -62,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     // Vérifier si l'établissement existe
     const existingEtablissement = await prisma.etablissement.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!existingEtablissement) {
@@ -77,7 +62,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
             validatedData.nom ? { nom: validatedData.nom } : {},
             validatedData.sousDomaine ? { sousDomaine: validatedData.sousDomaine } : {},
           ],
-          NOT: { id: params.id },
+          NOT: { id: (await params).id },
         },
       })
 
@@ -91,7 +76,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     // Mettre à jour l'établissement
     const updatedEtablissement = await prisma.etablissement.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: validatedData,
     })
 
@@ -109,7 +94,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest,{ params }: { params:  Promise<{ id: string}> }) {
   try {
     const session = await auth()
 
@@ -123,7 +108,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     // Vérifier si l'établissement existe
     const existingEtablissement = await prisma.etablissement.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!existingEtablissement) {
@@ -132,7 +117,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     // Supprimer l'établissement
     await prisma.etablissement.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     return NextResponse.json({ message: "Établissement supprimé avec succès" }, { status: 200 })
