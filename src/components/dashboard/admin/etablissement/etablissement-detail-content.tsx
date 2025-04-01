@@ -41,7 +41,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import FadeIn from "@/components/animations/fade-in"
-
+import { CreateClasseForm } from "./create-class-form"
 // Types
 export type Etablissement = {
   id: string
@@ -67,7 +67,20 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
   const [isAddClassDialogOpen, setIsAddClassDialogOpen] = useState(false)
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
   const router = useRouter()
+  const [isAddClasseOpen, setIsAddClasseOpen] = useState(false)
 
+  // Fonction pour rafraîchir les classes après ajout
+  const refreshClasses = async () => {
+    try {
+        const response = await fetch(`/api/admin/etablissement/${etablissements.id}/classes`)
+        if (response.ok) {
+            const data = await response.json()
+            setClasses(data)
+        }
+    } catch (error) {
+        console.error("Erreur lors du rafraîchissement des classes:", error)
+    }
+}
   // Fonction pour obtenir les initiales d'un nom
   const getInitials = (name: string | null) => {
     if (!name) return "?"
@@ -298,8 +311,17 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
                     <Download className="h-4 w-4" />
                     <span className="hidden sm:inline">Exporter</span>
                   </Button>
-
-                  <Dialog open={isAddClassDialogOpen} onOpenChange={setIsAddClassDialogOpen}>
+                  <Button size="sm" className="gap-1 bg-[#c83e3e] hover:bg-[#b53535]" onClick={() => setIsAddClasseOpen(true)}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Ajouter une classe
+                                        </Button>
+                  <CreateClasseForm 
+                    etablissementId={etablissement.id}
+                    isOpen={isAddClasseOpen}
+                    onOpenChange={setIsAddClasseOpen}
+                    onSuccess={refreshClasses} />
+                  
+                  {/* <Dialog open={isAddClassDialogOpen} onOpenChange={setIsAddClassDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" className="gap-1 bg-[#c83e3e] hover:bg-[#b53535]">
                         <Plus className="h-4 w-4" />
@@ -326,7 +348,7 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
                         <Button className="bg-[#c83e3e] hover:bg-[#b53535]">Ajouter la classe</Button>
                       </DialogFooter>
                     </DialogContent>
-                  </Dialog>
+                  </Dialog> */}
                 </div>
               </div>
 
