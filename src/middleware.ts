@@ -9,7 +9,7 @@ export default async function middleware(req: NextRequest) {
     const hostname = req.headers.get("host") || ""
 
     // Routes publiques qui ne nécessitent pas d'authentification
-    const publicRoutes = ["/sign-in", "/"]
+    const publicRoutes = ["/sign-in"]
     const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))
 
     // Vérifier si nous sommes sur un sous-domaine d'établissement
