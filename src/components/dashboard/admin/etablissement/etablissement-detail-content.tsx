@@ -43,23 +43,24 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import FadeIn from "@/components/animations/fade-in"
 
 // Types
-type Etablissement = {
+export type Etablissement = {
   id: string
   nom: string
   sousDomaine: string
-  adresse?: string
-  ville?: string
-  codePostal?: string
-  telephone?: string
-  email?: string
-  logo?: string
+  adresse?: string | null
+  ville?: string | null
+  codePostal?: string | null
+  telephone?: string | null
+  email?: string | null
+  logo?: string | null
   classes: { id: string; nom: string }[]
   users: { id: string; name: string | null; email: string | null; role?: string }[]
 }
 
-interface EtablissementDetailContentProps {
+export interface EtablissementDetailContentProps {
   etablissement: Etablissement
 }
+
 
 export default function EtablissementDetailContent({ etablissement }: EtablissementDetailContentProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)

@@ -1,36 +1,57 @@
 import { notFound } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import PageReveal from "@/components/animations/page-reveal"
 import EtablissementDetailContent from "@/components/dashboard/admin/etablissement/etablissement-detail-content"
 
-// Cette fonction serait remplacée par votre véritable fonction de récupération de données
-async function getEtablissement(id: string) {
-  // Simulation de récupération de données - à remplacer par votre code réel
+// Type pour l'établissement avec ses relations
+interface Etablissement {
+  id: string
+  nom: string
+  sousDomaine: string
+  adresse?: string | null
+  ville?: string | null
+  codePostal?: string | null
+  telephone?: string | null
+  email?: string | null
+  logo?: string | null
+  classes: {
+    id: string
+    nom: string
+  }[]
+  users: {
+    id: string
+    name?: string | null
+    email?: string | null
+    role?: string
+  }[]
+}
+
+// Fonction pour récupérer les données d'un établissement avec Prisma
+async function getEtablissement(id: string): Promise<Etablissement | null> {
   try {
-    // Remplacer par votre appel à Prisma
-    const etablissement = {
-      id,
-      nom: "Lycée Jean Moulin",
-      sousDomaine: "jean-moulin",
-      adresse: "123 Rue de l'Éducation",
-      ville: "Paris",
-      codePostal: "75001",
-      telephone: "01 23 45 67 89",
-      email: "contact@jean-moulin.edu",
-      logo: "/placeholder.svg?height=100&width=100",
-      classes: [
-        { id: "1", nom: "Seconde A" },
-        { id: "2", nom: "Seconde B" },
-        { id: "3", nom: "Première S" },
-        { id: "4", nom: "Terminale S" },
-      ],
-      users: [
-        { id: "1", name: "Jean Dupont", email: "jean@example.com", role: "ADMIN" },
-        { id: "2", name: "Marie Martin", email: "marie@example.com", role: "TEACHER" },
-        { id: "3", name: "Pierre Durand", email: "pierre@example.com", role: "TEACHER" },
-      ],
-    }
+    const etablissement = await prisma.etablissement.findUnique({
+      where: { id },
+      include: {
+        classes: {
+          select: {
+            id: true,
+            nom: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    })
+
     return etablissement
   } catch (error) {
+    console.error("Erreur lors de la récupération de l'établissement:", error)
     return null
   }
 }
@@ -38,11 +59,9 @@ async function getEtablissement(id: string) {
 export default async function EtablissementDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  // Attendre les paramètres avant de les utiliser
-  const resolvedParams = await params
-  const etablissement = await getEtablissement(resolvedParams.id)
+  const etablissement = await getEtablissement(params.id)
 
   if (!etablissement) {
     notFound()

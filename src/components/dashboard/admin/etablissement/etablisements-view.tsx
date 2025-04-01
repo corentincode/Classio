@@ -499,7 +499,7 @@ if (status === "loading") {
               <p className="text-muted-foreground text-center mb-4">
                 Aucun établissement ne correspond à votre recherche.
               </p>
-              <Button className="bg-[#c83e3e] hover:bg-[#b53535]">Ajouter un établissement</Button>
+              {/* <Button className="bg-[#c83e3e] hover:bg-[#b53535]">Ajouter un établissement</Button> */}
             </div>
           )}
         </FadeIn>
