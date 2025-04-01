@@ -1,7 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Search, Plus, MapPin, Phone, Mail, School, Users, Download, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +15,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import FadeIn from "@/components/animations/fade-in"
-
+import {useSession} from "next-auth/react";
+import {useRouter} from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 // Type pour un établissement
 interface Etablissement {
   id: string
@@ -39,8 +54,6 @@ const etablissementsData: Etablissement[] = [
     email: "contact@jean-moulin.edu",
     telephone: "01 23 45 67 89",
     sousDomaine: "jeanmoulin",
-    nbClasses: 15,
-    nbUsers: 450,
     createdAt: "2023-01-15",
     updatedAt: "2023-10-20",
   },
@@ -102,11 +115,63 @@ const etablissementsData: Etablissement[] = [
   },
 ]
 
+const etablissementSchema = z.object({
+  nom: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
+  sousDomaine: z
+      .string()
+      .min(2, { message: "Le sous-domaine doit contenir au moins 2 caractères" })
+      .regex(/^[a-z0-9-]+$/, {
+          message: "Le sous-domaine ne peut contenir que des lettres minuscules, des chiffres et des tirets",
+      }),
+  ville: z.string().optional(),
+  codePostal: z.string().optional(),
+  adresse: z.string().optional(),
+  email: z.string().email({ message: "Format d'email invalide" }).optional(),
+  telephone: z.string().optional(),
+})
+type EtablissementFormValues = z.infer<typeof etablissementSchema>
+
 export default function EtablissementsView() {
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortKey, setSortKey] = useState<keyof Etablissement>("nom")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [filter, setFilter] = useState<string>("all")
+  const { data: session, status } = useSession();
+  const [etablissementsData, setEtablissements] = useState<Etablissement[]>([]);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const form = useForm<EtablissementFormValues>({
+    resolver: zodResolver(etablissementSchema),
+    defaultValues: {
+        nom: "",
+        sousDomaine: "",
+    },
+})
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role !== "SUPER_ADMIN") {
+        router.push("/dashboard");
+    }
+
+    const fetchEtablissements = async () => {
+        try {
+            const response = await fetch("/api/admin/etablissement");
+            if (!response.ok) throw new Error("Impossible de charger les établissements");
+
+            const data = await response.json();
+            setEtablissements(data);
+        } catch (error) {
+            console.error("Erreur:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchEtablissements();
+}, [status, session, router]);
 
   // Filtrer les établissements en fonction de la recherche
   const filteredEtablissements = etablissementsData.filter((etablissement) => {
@@ -130,6 +195,42 @@ export default function EtablissementsView() {
     if (valueA > valueB) return sortDirection === "asc" ? 1 : -1
     return 0
   })
+
+  async function onSubmit(values: EtablissementFormValues) {
+    setIsLoading(true)
+    setError(null)
+    console.log(JSON.stringify(values));
+    
+    try {
+        const response = await fetch("/api/admin/etablissement", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(values),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            setError(data.message || "Une erreur est survenue lors de la création de l'établissement")
+            return
+        }
+
+        router.push("/dashboard/admin/etablissements/")
+        router.refresh()
+        setIsAddEventOpen(false)
+    } catch (error) {
+        setError("Une erreur est survenue. Veuillez réessayer.")
+    } finally {
+        setIsLoading(false)
+    }
+}
+
+// 🔥 Pendant le chargement, affiche un écran de chargement
+if (status === "loading") {
+  return <p className="text-center py-6">Chargement...</p>;
+}
 
   return (
     <div className="flex-1 flex flex-col">
@@ -194,10 +295,135 @@ export default function EtablissementsView() {
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Exporter</span>
               </Button>
-              <Button className="gap-1 bg-[#c83e3e] hover:bg-[#b53535]">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nouvel établissement</span>
-              </Button>
+              <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" className="gap-1 bg-[#c83e3e] hover:bg-[#b53535]">
+                                    <Plus className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Ajouter un établissement</span>
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[500px]">
+                                <DialogHeader>
+                                    <DialogTitle>Ajouter un établissement</DialogTitle>
+                                    <DialogDescription>
+                                        Créez un nouvel événement dans le calendrier. Remplissez tous les champs requis.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="nom"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nom de l'établissement*</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Lycée Jean Moulin" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="sousDomaine"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sous-domaine*</FormLabel>
+                            <FormControl>
+                              <Input placeholder="jean-moulin" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="ville"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Ville</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Paris" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="codePostal"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Code postal</FormLabel>
+                              <FormControl>
+                                <Input placeholder="75001" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="adresse"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Adresse</FormLabel>
+                            <FormControl>
+                              <Input placeholder="12 rue de la République" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="contact@jean-moulin.edu" type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="telephone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Téléphone</FormLabel>
+                              <FormControl>
+                                <Input placeholder="01 23 45 67 89" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                          {error}
+                        </div>
+                      )}
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsAddEventOpen(false)}>
+                                                Annuler
+                                            </Button>
+                                            <Button type="submit" disabled={isLoading} className="bg-[#c83e3e] hover:bg-[#b53535]">
+                                                {isLoading ? "Création en cours..." : "Créer l'établissement"}
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </Form>
+
+                            </DialogContent>
+                        </Dialog>
             </div>
           </div>
 
