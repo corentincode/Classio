@@ -13,6 +13,12 @@ export default async function middleware(req: NextRequest) {
     const sousDomaine = getSousDomaine(hostname)
     console.log("Sous-domaine détecté:", sousDomaine)
 
+    // Si nous sommes déjà sur la page de redirection, ne pas vérifier le sous-domaine
+    // Cela évite la boucle infinie
+    if (pathname === "/api/redirect-to-main") {
+        return NextResponse.next()
+    }
+
     // Routes publiques qui ne nécessitent pas d'authentification
     const publicRoutes = ["/sign-in", "/api"]
 
@@ -24,70 +30,63 @@ export default async function middleware(req: NextRequest) {
     const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))
     console.log("Est une route publique:", isPublicRoute)
 
-    // Si nous sommes sur un sous-domaine, vérifier s'il existe via une API
-    // if (sousDomaine) {
-    //     console.log("Traitement pour sous-domaine:", sousDomaine)
-    //
-    //     try {
-    //         // Vérifier si le sous-domaine existe via une API
-    //         // Note: Nous ne pouvons pas utiliser Prisma directement dans le middleware
-    //         const apiUrl = `${req.nextUrl.origin}/api/check-sous-domaine?sousDomaine=${sousDomaine}`
-    //         const response = await fetch(apiUrl)
-    //         const data = await response.json()
-    //
-    //         // Si le sous-domaine n'existe pas dans la base de données
-    //         if (!response.ok || !data.exists) {
-    //             console.log("Sous-domaine non trouvé dans la base de données:", sousDomaine)
-    //
-    //             // Rediriger vers le domaine principal avec un message d'erreur
-    //             const url = new URL("/", req.nextUrl.origin.replace(`${sousDomaine}.`, ""))
-    //             url.searchParams.set("error", "subdomain_not_found")
-    //             return NextResponse.redirect(url)
-    //         }
-    //
-    //         console.log("Sous-domaine valide trouvé:", sousDomaine)
-    //
-    //         // Stocker le sous-domaine dans les headers
-    //         const requestHeaders = new Headers(req.headers)
-    //         requestHeaders.set("x-sous-domaine", sousDomaine)
-    //         if (data.etablissementId) {
-    //             requestHeaders.set("x-etablissement-id", data.etablissementId)
-    //         }
-    //
-    //         // Si l'utilisateur accède à la page d'accueil sur un sous-domaine, rediriger vers sign-in
-    //         if (pathname === "/" && !session) {
-    //             console.log("Redirection vers /sign-in depuis la racine du sous-domaine")
-    //             return NextResponse.redirect(new URL("/sign-in", req.url))
-    //         }
-    //
-    //         // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
-    //         if (!session && !isPublicRoute) {
-    //             console.log("Redirection vers /sign-in depuis une route protégée")
-    //             const url = new URL("/sign-in", req.url)
-    //             url.searchParams.set("callbackUrl", encodeURI(pathname))
-    //             return NextResponse.redirect(url)
-    //         }
-    //
-    //         return NextResponse.next({
-    //             request: {
-    //                 headers: requestHeaders,
-    //             },
-    //         })
-    //     } catch (error) {
-    //         console.error("Erreur lors de la vérification du sous-domaine:", error)
-    //
-    //         // En cas d'erreur, continuer sans vérification
-    //         // Vous pouvez aussi choisir de rediriger vers le domaine principal
-    //         const requestHeaders = new Headers(req.headers)
-    //         requestHeaders.set("x-sous-domaine", sousDomaine)
-    //
-    //         return NextResponse.next({
-    //             request: {
-    //                 headers: requestHeaders,
-    //             },
-    //         })
-    //     }
-    // }
+    if (sousDomaine) {
+        try {
+            const apiUrl = `${req.nextUrl.origin}/api/check-sous-domaine?sousDomaine=${sousDomaine}`
+            const response = await fetch(apiUrl)
+            const data = await response.json()
+
+            // Si le sous-domaine n'existe pas dans la base de données
+            if (!response.ok || !data.exists) {
+                console.log("Sous-domaine non trouvé dans la base de données:", sousDomaine)
+
+                // Rediriger vers une API spéciale qui gère la redirection vers le domaine principal
+                // Cette approche évite la boucle infinie
+                return NextResponse.redirect(new URL("/api/redirect-to-main", req.url))
+            }
+
+            console.log("Sous-domaine valide trouvé:", sousDomaine)
+            // Stocker le sous-domaine dans les headers
+            const requestHeaders = new Headers(req.headers)
+            requestHeaders.set("x-sous-domaine", sousDomaine)
+            if (data.etablissementId) {
+                requestHeaders.set("x-etablissement-id", data.etablissementId)
+            }
+
+            // Si l'utilisateur accède à la page d'accueil sur un sous-domaine, rediriger vers sign-in
+            if (pathname === "/" ) {
+                console.log("Redirection vers /sign-in depuis la racine du sous-domaine")
+                return NextResponse.redirect(new URL("/sign-in", req.url))
+            }
+
+            // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
+            if (!session && !isPublicRoute) {
+                console.log("Redirection vers /sign-in depuis une route protégée")
+                const url = new URL("/sign-in", req.url)
+                url.searchParams.set("callbackUrl", encodeURI(pathname))
+                return NextResponse.redirect(url)
+            }
+
+            return NextResponse.next({
+                request: {
+                    headers: requestHeaders,
+                },
+            })
+
+        } catch (error) {
+            console.error("Erreur lors de la vérification du sous-domaine:", error)
+
+            // En cas d'erreur, continuer sans vérification
+            const requestHeaders = new Headers(req.headers)
+            requestHeaders.set("x-sous-domaine", sousDomaine)
+
+            return NextResponse.next({
+                request: {
+                    headers: requestHeaders,
+                },
+            })
+        }
+    }
 
     // Si nous sommes sur le domaine principal
     if (!session && !isPublicRoute) {
@@ -107,7 +106,6 @@ function getSousDomaine(hostname: string): string | null {
     // Gestion spéciale pour localhost en développement
     if (hostname.includes("localhost")) {
         // Format attendu: sous-domaine.localhost:port
-        // ou t.localhost:3000
         const parts = hostname.split(".")
 
         // Si nous avons un format comme "t.localhost:3000"
