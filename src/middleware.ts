@@ -10,14 +10,9 @@ export default async function middleware(req: NextRequest) {
     console.log("Middleware exécuté pour:", hostname, pathname)
 
     // Vérifier si nous sommes sur un sous-domaine d'établissement
+    // Mais ignorer le www qui est considéré comme faisant partie du domaine principal
     const sousDomaine = getSousDomaine(hostname)
     console.log("Sous-domaine détecté:", sousDomaine)
-
-    // Si nous sommes déjà sur la page de redirection, ne pas vérifier le sous-domaine
-    // Cela évite la boucle infinie
-    if (pathname === "/api/redirect-to-main") {
-        return NextResponse.next()
-    }
 
     // Routes publiques qui ne nécessitent pas d'authentification
     const publicRoutes = ["/sign-in", "/api"]
@@ -40,9 +35,40 @@ export default async function middleware(req: NextRequest) {
             if (!response.ok || !data.exists) {
                 console.log("Sous-domaine non trouvé dans la base de données:", sousDomaine)
 
-                // Rediriger vers une API spéciale qui gère la redirection vers le domaine principal
-                // Cette approche évite la boucle infinie
-                return NextResponse.redirect(new URL("/api/redirect-to-main", req.url))
+                // Construire l'URL du domaine principal
+                let mainDomain
+
+                if (hostname.includes('localhost')) {
+                    // Pour localhost, on garde le port
+                    const port = hostname.split(':')[1] || '3000'
+                    mainDomain = `http://localhost:${port}`
+                } else {
+                    // Pour les domaines de production
+                    // Extraire le domaine principal avec www si nécessaire
+                    const domainParts = hostname.split('.')
+                    domainParts.shift() // Enlever le sous-domaine
+
+                    // Utiliser le protocole approprié
+                    const protocol = req.nextUrl.protocol
+
+                    // Si le domaine principal n'a pas déjà www, on l'ajoute
+                    if (domainParts[0] !== 'www') {
+                        mainDomain = `${protocol}//www.${domainParts.join('.')}`
+                    } else {
+                        mainDomain = `${protocol}//${domainParts.join('.')}`
+                    }
+                }
+
+                console.log("Redirection vers le domaine principal:", mainDomain)
+
+                // Ajouter un cookie pour éviter la boucle de redirection
+                const response = NextResponse.redirect(mainDomain)
+                response.cookies.set("redirected_from_subdomain", "true", {
+                    maxAge: 10, // Courte durée pour éviter les problèmes
+                    path: "/"
+                })
+
+                return response
             }
 
             console.log("Sous-domaine valide trouvé:", sousDomaine)
@@ -118,8 +144,14 @@ function getSousDomaine(hostname: string): string | null {
     }
 
     // Pour les domaines de production
-    // Exemple: pour jean-moulin.example.com, retourne "jean-moulin"
     const parts = hostname.split(".")
+
+    // Considérer "www" comme faisant partie du domaine principal, pas comme un sous-domaine
+    if (parts[0] === "www") {
+        return null
+    }
+
+    // Pour un format comme "sous-domaine.julianmayer.fr"
     if (parts.length > 2) {
         return parts[0]
     }
