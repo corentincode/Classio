@@ -43,7 +43,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import FadeIn from "@/components/animations/fade-in"
 
 // Types
-type Etablissement = {
+export type Etablissement = {
   id: string
   nom: string
   sousDomaine: string
