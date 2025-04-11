@@ -69,7 +69,7 @@ export default async function middleware(req: NextRequest) {
                         console.error("Erreur API:", response.status)
                     }
                 } catch (fetchError) {
-                    console.error("Erreur lors de l'appel API:", fetchError)
+                    console.error("Erreur lors de l'appel API: ", fetchError)
                 }
 
                 // Mettre en cache le résultat
