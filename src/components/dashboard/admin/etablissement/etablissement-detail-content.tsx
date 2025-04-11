@@ -16,6 +16,7 @@ import {
   Download,
   UserPlus,
   School,
+  Loader,
 } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -67,6 +68,99 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
   const router = useRouter()
 
+  const [userFirstName, setUserFirstName] = useState("")
+  const [userName, setUserName] = useState("")
+  const [userEmail, setUserEmail] = useState("")
+  const [userRole, setUserRole] = useState("ELEVE")
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  // Ajouter un état pour stocker le mot de passe généré
+  const [generatedPassword, setGeneratedPassword] = useState("")
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  // Fonction pour générer un mot de passe aléatoire sécurisé
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+"
+    let password = ""
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return password
+  }
+
+  // Fonction pour ajouter un utilisateur
+  const handleAddUser = async () => {
+    // Réinitialiser les erreurs
+    setFormErrors({})
+
+    // Validation basique
+    const errors: Record<string, string> = {}
+    if (!userFirstName.trim()) errors.firstName = "Le prénom est requis"
+    if (!userName.trim()) errors.name = "Le nom est requis"
+    if (!userEmail.trim()) errors.email = "L'email est requis"
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) errors.email = "Format d'email invalide"
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Générer un mot de passe aléatoire
+      const password = generateRandomPassword()
+      setGeneratedPassword(password) // Stocker le mot de passe généré
+
+      // Préparer les données à envoyer
+      const userData = {
+        firstName: userFirstName,
+        name: userName,
+        email: userEmail,
+        role: userRole,
+        password: password,
+      }
+
+      // Appel à l'API
+      const response = await fetch(`/api/admin/etablissement/${etablissement.id}/user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Erreur lors de la création de l'utilisateur")
+      }
+
+      const data = await response.json()
+
+
+      // Fermer le dialogue et réinitialiser le formulaire
+      setIsAddUserDialogOpen(false)
+      setShowPasswordDialog(true)
+
+      setUserFirstName("")
+      setUserName("")
+      setUserEmail("")
+      setUserRole("ELEVE")
+
+      // Rafraîchir les données
+      router.refresh()
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de l'utilisateur:", error)
+
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Ajouter cette fonction pour copier le mot de passe dans le presse-papiers
+  const copyPasswordToClipboard = () => {
+    navigator.clipboard.writeText(generatedPassword)
+
+  }
   // Fonction pour obtenir les initiales d'un nom
   const getInitials = (name: string | null) => {
     if (!name) return "?"
@@ -83,9 +177,9 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
     switch (role) {
       case "ADMIN":
         return "bg-blue-100 text-blue-800"
-      case "TEACHER":
+      case "PROF":
         return "bg-green-100 text-green-800"
-      case "STUDENT":
+      case "ELEVE":
         return "bg-purple-100 text-purple-800"
       default:
         return "bg-gray-100 text-gray-800"
@@ -97,9 +191,9 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
     switch (role) {
       case "ADMIN":
         return "Administrateur"
-      case "TEACHER":
+      case "PROF":
         return "Enseignant"
-      case "STUDENT":
+      case "ELEVE":
         return "Élève"
       default:
         return "Utilisateur"
@@ -423,38 +517,80 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <label htmlFor="userName" className="text-sm font-medium">
-                            Nom complet
+                          <label htmlFor="userFirstName" className="text-sm font-medium">
+                            Prénom
                           </label>
-                          <input id="userName" className="w-full p-2 border rounded-md" placeholder="Ex: Jean Dupont" />
+                          <input
+                              id="userFirstName"
+                              className="w-full p-2 border rounded-md"
+                              placeholder="Ex: Jean"
+                              value={userFirstName}
+                              onChange={(e) => setUserFirstName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label htmlFor="userName" className="text-sm font-medium">
+                            Nom
+                          </label>
+                          <input
+                              id="userName"
+                              className="w-full p-2 border rounded-md"
+                              placeholder="Ex: Dupont"
+                              value={userName}
+                              onChange={(e) => setUserName(e.target.value)}
+                          />
                         </div>
                         <div className="space-y-2">
                           <label htmlFor="userEmail" className="text-sm font-medium">
                             Email
                           </label>
                           <input
-                            id="userEmail"
-                            type="email"
-                            className="w-full p-2 border rounded-md"
-                            placeholder="Ex: jean.dupont@example.com"
+                              id="userEmail"
+                              type="email"
+                              className="w-full p-2 border rounded-md"
+                              placeholder="Ex: jean.dupont@example.com"
+                              value={userEmail}
+                              onChange={(e) => setUserEmail(e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
                           <label htmlFor="userRole" className="text-sm font-medium">
                             Rôle
                           </label>
-                          <select id="userRole" className="w-full p-2 border rounded-md">
+                          <select
+                              id="userRole"
+                              className="w-full p-2 border rounded-md"
+                              value={userRole}
+                              onChange={(e) => setUserRole(e.target.value)}
+                          >
                             <option value="ADMIN">Administrateur</option>
-                            <option value="TEACHER">Enseignant</option>
-                            <option value="STUDENT">Élève</option>
+                            <option value="PROF">Enseignant</option>
+                            <option value="ELEVE">Élève</option>
                           </select>
+                        </div>
+                        <div className="pt-2 text-sm text-muted-foreground">
+                          Un mot de passe aléatoire sera généré. L'utilisateur pourra le réinitialiser lors de sa
+                          première connexion.
                         </div>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
                           Annuler
                         </Button>
-                        <Button className="bg-[#c83e3e] hover:bg-[#b53535]">Ajouter l'utilisateur</Button>
+                        <Button
+                            onClick={handleAddUser}
+                            className="bg-[#c83e3e] hover:bg-[#b53535]"
+                            disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                              <>
+                                <Loader  className="mr-2 h-4 w-4 animate-spin" />
+                                Création en cours...
+                              </>
+                          ) : (
+                              "Ajouter l'utilisateur"
+                          )}
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -462,38 +598,32 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
               </div>
 
               {etablissement.users.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Utilisateur</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Rôle</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {etablissement.users.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className={getAvatarColor(user.role)}>
-                                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                              </Avatar>
-                              <div>{user.name || "Utilisateur sans nom"}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{user.email || "-"}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`${
-                                user.role === "ADMIN"
-                                  ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                                  : user.role === "TEACHER"
-                                    ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                    : "bg-purple-100 text-purple-800 hover:bg-purple-100"
-                              }`}
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Utilisateur</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Rôle</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {etablissement.users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className={getAvatarColor(user.role)}>
+                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>{user.name || "Utilisateur sans nom"}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{user.email || "-"}</TableCell>
+                              <TableCell>
+                                <Badge
+                                    variant="outline"
+                                    className={getAvatarColor(user.role)}
                             >
                               {getRoleLabel(user.role)}
                             </Badge>
@@ -677,6 +807,47 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
               </div>
             </TabsContent>
           </Tabs>
+          {/* Dialogue pour afficher le mot de passe généré */}
+          <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Utilisateur créé avec succès</DialogTitle>
+                <DialogDescription>
+                  Voici le mot de passe généré pour {userFirstName} {userName}. Assurez-vous de le communiquer à
+                  l'utilisateur de manière sécurisée.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="p-4 bg-gray-50 rounded-md border mt-2">
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-sm">{generatedPassword}</div>
+                  <Button variant="outline" size="sm" onClick={copyPasswordToClipboard} className="ml-2">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-1"
+                    >
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                    </svg>
+                    Copier
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                <p>L'utilisateur devra changer ce mot de passe lors de sa première connexion.</p>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setShowPasswordDialog(false)}>Fermer</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </FadeIn>
       </main>
     </div>

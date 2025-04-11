@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server"
+import {NextRequest, NextResponse} from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-import {auth} from "@/lib/auth";
-import type { ClasseRole } from "@prisma/client"
+import { auth } from "@/lib/auth"
+import { Role } from "@prisma/client"
 
 // Schéma de validation pour la création d'un utilisateur
 const createUserSchema = z.object({
@@ -16,7 +16,7 @@ const createUserSchema = z.object({
     roleInClass: z.enum(["ELEVE", "PROF", "SURVEILLANT", "SECRETAIRE"]).optional(),
 })
 
-export async function GET(request: NextRequest, { params }: { params:  Promise<{ id: string;  }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; }> }) {
     try {
         const session = await auth()
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, { params }: { params:  Promise<{
     }
 }
 
-export async function POST(request: NextRequest,{ params }: { params:  Promise<{ id: string;  }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; }> }) {
     try {
         const session = await auth()
 
@@ -92,19 +92,14 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
 
         console.log("🟢 Session utilisateur :", session.user)
 
-        // Récupérer le rôle de l'utilisateur connecté
-        const currentUser = await prisma.user.findUnique({
-            where: { email: session.user.email as string },
-            select: { role: true, etablissementId: true },
-        })
-
-        if (!currentUser || (currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "ADMIN")) {
-            console.error("🔴 ERREUR : Accès refusé - Rôle :", currentUser?.role)
+        // Vérifier si l'utilisateur est un SUPER_ADMIN ou ADMIN
+        if (!session?.user?.role || (session.user.role !== Role.SUPER_ADMIN && session.user.role !== Role.ADMIN)) {
             return NextResponse.json(
                 { message: "Non autorisé. Seuls les administrateurs peuvent créer des utilisateurs." },
                 { status: 403 },
             )
         }
+
 
         const resolvedParams = await params
         const { id: etablissementId } = resolvedParams
@@ -120,7 +115,7 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
         }
 
         // Vérifier que l'ADMIN ne peut créer des utilisateurs que pour son établissement
-        if (currentUser.role === "ADMIN" && currentUser.etablissementId !== etablissementId) {
+        if (session.user.role === Role.ADMIN && session.user?.etablissementId !== etablissementId) {
             console.error("🔴 ERREUR : Un ADMIN tente de créer un utilisateur pour un autre établissement")
             return NextResponse.json(
                 { message: "Non autorisé. Vous ne pouvez créer des utilisateurs que pour votre établissement." },
@@ -130,7 +125,6 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
 
         const body = await request.json()
         console.log("🟢 Données reçues :", body)
-        const validatedData = createUserSchema.parse(body);
 
         // Valider avec Zod
         const validationResult = createUserSchema.safeParse(body)
@@ -143,10 +137,11 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
             )
         }
 
+        const validatedData = validationResult.data
         console.log("🟢 Données validées :", validatedData)
 
         // 🔥 Empêcher la création d'un ADMIN/SUPER_ADMIN par un ADMIN
-        if (currentUser.role === "ADMIN" && (validatedData.role === "SUPER_ADMIN" || validatedData.role === "ADMIN")) {
+        if (session.user.role === Role.ADMIN && (validatedData.role === "ADMIN" || validatedData.role === "SUPER_ADMIN")) {
             console.error("🔴 ERREUR : Un ADMIN ne peut pas créer un autre ADMIN")
             return NextResponse.json(
                 { message: "Non autorisé. Vous ne pouvez pas créer d'administrateurs." },
@@ -165,8 +160,9 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
         }
 
         // Hacher le mot de passe
-        const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-        console.log("🟢 Mot de passe haché avec succès");
+        const hashedPassword = await bcrypt.hash(validatedData.password, 10)
+        console.log("🟢 Mot de passe haché avec succès")
+
         // Préparer les données pour la création
         const userData: any = {
             email: validatedData.email,
@@ -175,12 +171,6 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
             password: hashedPassword,
             role: validatedData.role,
             etablissementId,
-        }
-
-        // Hacher le mot de passe si fourni
-        if (validatedData.password) {
-            userData.password = await bcrypt.hash(validatedData.password, 10)
-            console.log("🟢 Mot de passe haché avec succès")
         }
 
         // Créer l'utilisateur
@@ -195,6 +185,7 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
                 etablissementId: true,
             },
         })
+
         // Si classeId est fourni, créer l'association avec la classe
         let classeUser = null
         if (validatedData.classeId && validatedData.roleInClass) {
@@ -202,7 +193,7 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
                 data: {
                     userId: user.id,
                     classeId: validatedData.classeId,
-                    roleInClass: validatedData.roleInClass as ClasseRole,
+                    roleInClass: validatedData.roleInClass,
                 },
                 include: {
                     classe: {
@@ -227,4 +218,3 @@ export async function POST(request: NextRequest,{ params }: { params:  Promise<{
         return NextResponse.json({ message: "Erreur interne du serveur" }, { status: 500 })
     }
 }
-
