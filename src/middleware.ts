@@ -66,17 +66,31 @@ export default async function middleware(req: NextRequest) {
         }
 
         return NextResponse.next()
-    }
+    } else {
+        // Nous sommes sur le domaine principal
+        // Vérifier si nous venons d'être redirigés pour éviter une boucle
+        const url = new URL(req.url)
+        if (url.searchParams.get("redirected") === "true") {
+            // Supprimer le paramètre et continuer
+            url.searchParams.delete("redirected")
+            return NextResponse.rewrite(url)
+        }
 
-    // Si nous sommes sur le domaine principal
-    if (!session && !isPublicRoute) {
-        const url = new URL("/sign-in", req.url)
-        url.searchParams.set("callbackUrl", encodeURI(pathname))
-        return NextResponse.redirect(url)
+        // Routes publiques pour le domaine principal
+        const publicRoutes = ["/sign-in", "/"]
+        const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))
+
+        // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
+        if (!session && !isPublicRoute) {
+            const url = new URL("/sign-in", req.url)
+            url.searchParams.set("callbackUrl", encodeURI(pathname))
+            return NextResponse.redirect(url)
+        }
     }
 
     return NextResponse.next()
 }
+
 
 
 
