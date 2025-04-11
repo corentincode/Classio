@@ -51,7 +51,7 @@ export default async function middleware(req: NextRequest) {
                 // Utiliser une approche différente pour la validation
                 // Au lieu d'appeler l'API, nous allons vérifier directement une liste de sous-domaines valides
                 // Cette approche est temporaire jusqu'à ce que nous puissions résoudre le problème d'API
-                // const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
+                // const apiUrl = `http://localhost:3000/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
                 const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
 
                 console.log("Appel API pour valider le sous-domaine:", apiUrl)

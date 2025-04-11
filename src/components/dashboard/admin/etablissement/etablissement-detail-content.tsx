@@ -442,8 +442,8 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
                           <TableCell>-</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm">
-                                Détails
+                              <Button variant="outline" size="sm" >
+                                <Link href={`/dashboard/admin/etablissements/${etablissement.id}/classes/${classe.id}`}>Détails</Link>
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -467,10 +467,21 @@ export default function EtablissementDetailContent({ etablissement }: Etablissem
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Modifier</DropdownMenuItem>
-                                  <DropdownMenuItem>Gérer les élèves</DropdownMenuItem>
-                                  <DropdownMenuItem>Gérer les enseignants</DropdownMenuItem>
+                                  <Link href={`/dashboard/admin/etablissements/${etablissement.id}/classes/${classe.id}`}>
+                                    <DropdownMenuItem>
+                                      Modifier
+                                    </DropdownMenuItem>
+                                  </Link>
+                                  <Link href={`/dashboard/admin/etablissements/${etablissement.id}/classes/${classe.id}`}>
+                                    <DropdownMenuItem>
+                                      Gérer les élèves
+                                    </DropdownMenuItem>
+                                  </Link>
+                                  <Link href={`/dashboard/admin/etablissements/${etablissement.id}/classes/${classe.id}`}>
+                                    <DropdownMenuItem>Gérer les enseignants</DropdownMenuItem>
+                                  </Link>
                                   <DropdownMenuSeparator />
+
                                   <DropdownMenuItem className="text-red-600">Supprimer</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

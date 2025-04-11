@@ -49,8 +49,9 @@ const staggerContainer = {
 
 export default function DashboardContent() {
   const [activeTab, setActiveTab] = useState("overview")
-  const { etablissementId, isLoading, updateEtablissementId } = useLocalStorageEtablissement()
-  if (isLoading) {
+  const { etablissementId, isLoading, updateEtablissementId, etablissementData } = useLocalStorageEtablissement()
+
+  if (isLoading ) {
     return <div>Chargement...</div>
   }
   return (
@@ -58,14 +59,14 @@ export default function DashboardContent() {
       {/* Header */}
       <header className="border-b border-[#f5f0e8] bg-white p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger />
+          <div className="flex items-center gap-4 ">
+            <SidebarTrigger/>
             <h1 className="text-xl font-bold">Tableau de bord</h1>
-            <p>{etablissementId || "Non disponible"}</p>
+            <strong>{etablissementData.nom || "Non disponible"}</strong>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="relative hidden md:block">
+          <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
@@ -118,7 +119,7 @@ export default function DashboardContent() {
               <motion.div variants={fadeIn}>
                 <StatsCard
                   title="Élèves"
-                  value="1,248"
+                  value={etablissementData.stats.eleves}
                   change="+2.5%"
                   trend="up"
                   icon={<Users className="h-5 w-5 text-[#c83e3e]" />}
@@ -128,7 +129,7 @@ export default function DashboardContent() {
               <motion.div variants={fadeIn}>
                 <StatsCard
                   title="Classes"
-                  value="42"
+                  value={etablissementData.stats.classes}
                   change="0%"
                   trend="neutral"
                   icon={<BookOpen className="h-5 w-5 text-[#c83e3e]" />}
