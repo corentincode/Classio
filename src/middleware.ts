@@ -48,8 +48,29 @@ export default async function middleware(req: NextRequest) {
                 // Utiliser une approche différente pour la validation
                 // Au lieu d'appeler l'API, nous allons vérifier directement une liste de sous-domaines valides
                 // Cette approche est temporaire jusqu'à ce que nous puissions résoudre le problème d'API
-                const validSubdomains = ["ecole", "college", "lycee", "test"] // Remplacer par vos sous-domaines valides
-                isValid = validSubdomains.includes(sousDomaine)
+                const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
+                console.log("Appel API pour valider le sous-domaine:", apiUrl)
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    })
+
+                    if (response.ok) {
+                        const data = await response.json()
+                        isValid = data.valid
+                        console.log("Réponse API pour", sousDomaine, "- Valide:", isValid)
+
+                        // Mettre en cache le résultat
+                        subdomainCache[sousDomaine] = { valid: isValid, timestamp: now }
+                    } else {
+                        console.error("Erreur API:", response.status)
+                    }
+                } catch (fetchError) {
+                    console.error("Erreur lors de l'appel API:", fetchError)
+                }
 
                 // Mettre en cache le résultat
                 subdomainCache[sousDomaine] = { valid: isValid, timestamp: now }
