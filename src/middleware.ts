@@ -2,9 +2,10 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getSousDomaine } from "@/lib/get-sous-domaine"
+import Cookies from "js-cookie"
 
 // Cache pour stocker les résultats de validation des sous-domaines
-const subdomainCache: Record<string, { valid: boolean; timestamp: number }> = {}
+const subdomainCache: Record<string, { valid: boolean; timestamp: number; etablissementId?: string }> = {}
 const CACHE_TTL = 60 * 60 * 1000 // 1 heure en millisecondes
 
 export default async function middleware(req: NextRequest) {
@@ -39,16 +40,20 @@ export default async function middleware(req: NextRequest) {
         try {
             let isValid = false
             const now = Date.now()
-
+            let etablissementId = ""
             // Vérifier le cache d'abord
             if (subdomainCache[sousDomaine] && now - subdomainCache[sousDomaine].timestamp < CACHE_TTL) {
                 isValid = subdomainCache[sousDomaine].valid
+                etablissementId = subdomainCache[sousDomaine].etablissementId || ""
+
                 console.log("Utilisation du cache pour", sousDomaine, "- Valide:", isValid)
             } else {
                 // Utiliser une approche différente pour la validation
                 // Au lieu d'appeler l'API, nous allons vérifier directement une liste de sous-domaines valides
                 // Cette approche est temporaire jusqu'à ce que nous puissions résoudre le problème d'API
+                // const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
                 const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
+
                 console.log("Appel API pour valider le sous-domaine:", apiUrl)
                 try {
                     const response = await fetch(apiUrl, {
@@ -61,10 +66,11 @@ export default async function middleware(req: NextRequest) {
                     if (response.ok) {
                         const data = await response.json()
                         isValid = data.valid
-                        console.log("Réponse API pour", sousDomaine, "- Valide:", isValid)
+                        console.log("Réponse API pour", JSON.stringify(data), "- Valide:", isValid)
+                        etablissementId = data.etablissementId || ""
 
                         // Mettre en cache le résultat
-                        subdomainCache[sousDomaine] = { valid: isValid, timestamp: now }
+                        subdomainCache[sousDomaine] = { valid: isValid, timestamp: now, etablissementId }
                     } else {
                         console.error("Erreur API:", response.status)
                     }
@@ -96,12 +102,33 @@ export default async function middleware(req: NextRequest) {
                 return response
             }
 
+            // Stocker l'ID de l'établissement dans un cookie pour l'utiliser dans les composants
+            const response = NextResponse.next()
+            console.log(etablissementId)
+            // Vérifier que l'ID n'est pas vide avant de le stocker
+            if (etablissementId && etablissementId.trim() !== "") {
+                console.log("Stockage de l'ID d'établissement dans un cookie:", etablissementId)
+
+                // Définir un cookie avec l'ID de l'établissement
+                // Ce cookie n'est pas httpOnly pour qu'il soit accessible côté client
+                response.cookies.set("etablissement_id", etablissementId, {
+                    maxAge: 60 * 60 * 24 * 7, // 7 jours
+                    path: "/",
+                    sameSite: "lax", // Changer à "lax" pour une meilleure compatibilité
+                    secure: process.env.NODE_ENV === "production", // Sécurisé uniquement en production
+                })
+            } else {
+                console.error("ID d'établissement vide ou invalide:", etablissementId)
+            }
+
+
             // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
             if (!session && !isPublicRoute) {
                 const url = new URL("/sign-in", req.url)
                 url.searchParams.set("callbackUrl", encodeURI(pathname))
                 return NextResponse.redirect(url)
             }
+            return response
         } catch (error) {
             console.error("Erreur lors de la vérification du sous-domaine:", error)
         }

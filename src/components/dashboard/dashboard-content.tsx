@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { useEtablissementId } from "@/hooks/use-etablissement-id"
+import {useLocalStorageEtablissement} from "@/hooks/use-local-storage-etablissement";
 
 // Animations
 const fadeIn = {
@@ -47,7 +49,10 @@ const staggerContainer = {
 
 export default function DashboardContent() {
   const [activeTab, setActiveTab] = useState("overview")
-
+  const { etablissementId, isLoading, updateEtablissementId } = useLocalStorageEtablissement()
+  if (isLoading) {
+    return <div>Chargement...</div>
+  }
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
@@ -56,6 +61,7 @@ export default function DashboardContent() {
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <h1 className="text-xl font-bold">Tableau de bord</h1>
+            <p>{etablissementId || "Non disponible"}</p>
           </div>
 
           <div className="flex items-center gap-4">
