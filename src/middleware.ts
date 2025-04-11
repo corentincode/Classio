@@ -15,6 +15,17 @@ export default async function middleware(req: NextRequest) {
 
     console.log("Middleware processing:", hostname, pathname)
 
+    // Vérifier si nous avons déjà redirigé (via cookie)
+    const redirectCookie = req.cookies.get("subdomain_redirect")
+    if (redirectCookie?.value === "true") {
+        // Nous avons déjà redirigé, ne pas rediriger à nouveau
+        console.log("Redirection déjà effectuée, continuer sans rediriger")
+        const response = NextResponse.next()
+        // Effacer le cookie de redirection
+        response.cookies.delete("subdomain_redirect")
+        return response
+    }
+
     // Vérifier si nous sommes sur un sous-domaine d'établissement
     const sousDomaine = getSousDomaine(hostname)
     console.log("Sous domaine détecté:", sousDomaine)
@@ -34,39 +45,34 @@ export default async function middleware(req: NextRequest) {
                 isValid = subdomainCache[sousDomaine].valid
                 console.log("Utilisation du cache pour", sousDomaine, "- Valide:", isValid)
             } else {
-                // Construire l'URL complète pour l'API
-                // Important: Utiliser le domaine principal pour l'API, pas le sous-domaine
-                const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
-                console.log("Appel API pour valider le sous-domaine:", apiUrl)
+                // Utiliser une approche différente pour la validation
+                // Au lieu d'appeler l'API, nous allons vérifier directement une liste de sous-domaines valides
+                // Cette approche est temporaire jusqu'à ce que nous puissions résoudre le problème d'API
+                const validSubdomains = ["ecole", "college", "lycee", "test"] // Remplacer par vos sous-domaines valides
+                isValid = validSubdomains.includes(sousDomaine)
 
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    })
-
-                    if (response.ok) {
-                        const data = await response.json()
-                        isValid = data.valid
-                        console.log("Réponse API pour", sousDomaine, "- Valide:", isValid)
-
-                        // Mettre en cache le résultat
-                        subdomainCache[sousDomaine] = { valid: isValid, timestamp: now }
-                    } else {
-                        console.error("Erreur API:", response.status)
-                    }
-                } catch (fetchError) {
-                    console.error("Erreur lors de l'appel API:", fetchError)
-                }
+                // Mettre en cache le résultat
+                subdomainCache[sousDomaine] = { valid: isValid, timestamp: now }
+                console.log("Validation directe du sous-domaine:", sousDomaine, "- Valide:", isValid)
             }
 
             // Si le sous-domaine n'existe pas, rediriger vers le domaine principal
             if (!isValid) {
                 console.log("Sous-domaine invalide, redirection vers le domaine principal")
-                // Ajouter un paramètre pour éviter la boucle de redirection
-                return NextResponse.redirect(`https://${mainDomain}/?redirected=true`)
+
+                // Créer la réponse de redirection
+                const response = NextResponse.redirect(`https://${mainDomain}/`)
+
+                // Définir un cookie pour indiquer que nous avons déjà redirigé
+                // Ce cookie empêchera une nouvelle redirection lorsque nous atteindrons le domaine principal
+                response.cookies.set("subdomain_redirect", "true", {
+                    maxAge: 10, // Courte durée de vie (10 secondes)
+                    path: "/",
+                    httpOnly: true,
+                    sameSite: "strict",
+                })
+
+                return response
             }
 
             // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
@@ -82,14 +88,6 @@ export default async function middleware(req: NextRequest) {
         return NextResponse.next()
     } else {
         // Nous sommes sur le domaine principal
-        // Vérifier si nous venons d'être redirigés pour éviter une boucle
-        const url = new URL(req.url)
-        if (url.searchParams.get("redirected") === "true") {
-            // Supprimer le paramètre et continuer
-            url.searchParams.delete("redirected")
-            return NextResponse.rewrite(url)
-        }
-
         // Routes publiques pour le domaine principal
         const publicRoutes = ["/sign-in", "/"]
         const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))
