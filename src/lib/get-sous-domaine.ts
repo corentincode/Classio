@@ -5,7 +5,7 @@
  */
 export function getSousDomaine(hostname: string): string | null {
     // Define your main domain (without www)
-    const MAIN_DOMAIN = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "localhost:3000"
+    const MAIN_DOMAIN = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "julianmayer.fr"
     const isDev = MAIN_DOMAIN.includes("localhost")
 
     // Remove port if present for comparison

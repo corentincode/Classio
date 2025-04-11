@@ -51,7 +51,7 @@ export default async function middleware(req: NextRequest) {
             // Si le sous-domaine n'existe pas, rediriger vers le domaine principal
             if (!isValid) {
                 const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "julianmayer.fr"
-                return NextResponse.redirect(`https://${mainDomain}/`)
+                return NextResponse.redirect(`https://www.${mainDomain}/`)
             }
 
             // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
