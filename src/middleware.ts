@@ -42,9 +42,8 @@ export default async function middleware(req: NextRequest) {
             const now = Date.now()
             let etablissementId = ""
 
-// Update the API URL in your middleware
-            const apiUrl = `https://${mainDomain}/api/internal/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}&apiKey=${process.env.INTERNAL_API_KEY}`
-            console.log("Appel API pour valider le sous-domaine:", apiUrl)
+            // Update the API URL in your middleware
+            const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}&source=middleware`;        console.log("Appel API pour valider le sous-domaine:", apiUrl)
             try {
                 if (session) {
                     const response = await fetch(apiUrl, {
