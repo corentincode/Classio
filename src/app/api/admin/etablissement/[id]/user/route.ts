@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // Définir les conditions de recherche en fonction du rôle et de l'établissement
         let whereCondition: any = {}
 
-        if (currentUser.role === "SUPER_ADMIN") {
+        if (currentUser.role === Role.SUPER_ADMIN) {
             // Le SUPER_ADMIN peut voir tous les utilisateurs, filtrer par établissement si spécifié
             whereCondition = { etablissementId }
         } else if (currentUser.role === "ADMIN") {

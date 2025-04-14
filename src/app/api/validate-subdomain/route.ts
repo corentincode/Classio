@@ -1,21 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const domain = searchParams.get("domain")
-    const isMiddlewareRequest = searchParams.get("source") === "middleware"
-
-    // Get request headers to check if it's an internal request
-    const headersList = headers()
-    const referer = headersList.get("referer") || ""
-    const host = headersList.get("host") || ""
-
-    // Check if this is a request from our own middleware
-    const isInternalRequest = isMiddlewareRequest &&
-        (referer.includes(host) || referer === "" || !referer)
+    const isMiddlewareRequest = searchParams.get("_middleware") === "true"
 
     if (!domain) {
         return NextResponse.json({ valid: false, error: "Domain parameter is required" }, { status: 400 })
@@ -31,7 +21,7 @@ export async function GET(request: Request) {
         })
 
         // For middleware requests, just return if the subdomain is valid
-        if (isInternalRequest) {
+        if (isMiddlewareRequest) {
             return NextResponse.json({
                 valid: !!etablissement,
                 etablissementId: etablissement ? etablissement.id : null,
@@ -50,10 +40,13 @@ export async function GET(request: Request) {
             return NextResponse.json({ valid: false, error: "Establishment not found" })
         }
 
-        // Get the current user with their role
+        // Get the current user with their role and establishment
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { role: true, etablissementId: true }
+            select: {
+                role: true,
+                etablissementId: true
+            }
         })
 
         if (!user) {
@@ -65,9 +58,25 @@ export async function GET(request: Request) {
         const belongsToEstablishment = user.etablissementId === etablissement.id
 
         if (!isSuperAdmin && !belongsToEstablishment) {
+            // User doesn't belong to this establishment
+            let userEstablishment = null;
+
+            // Only try to fetch the user's establishment if they have one
+            if (user.etablissementId) {
+                userEstablishment = await prisma.etablissement.findUnique({
+                    where: { id: user.etablissementId },
+                    select: {
+                        id: true,
+                        sousDomaine: true
+                    }
+                })
+            }
+
             return NextResponse.json({
                 valid: false,
-                error: "You don't have permission to access this establishment"
+                error: "You don't have permission to access this establishment",
+                shouldRedirect: !!userEstablishment,
+                userEstablishment: userEstablishment
             }, { status: 403 })
         }
 
