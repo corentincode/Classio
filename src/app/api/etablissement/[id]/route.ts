@@ -4,15 +4,11 @@ import { auth } from "@/lib/auth"
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string; }> }, // Correction du type de params
+    { params }: { params: Promise<{ id: string; }> },
 ) {
     try {
-        const session = await auth()
-
-        // Vous pouvez commenter cette vérification pendant le développement si nécessaire
-        // if (!session?.user) {
-        //   return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
-        // }
+        // Check if this is a middleware request
+        const isMiddlewareRequest = request.nextUrl.searchParams.get("_middleware") === "true"
 
         // On attend que params soit résolu
         const resolvedParams = await params;
@@ -20,9 +16,37 @@ export async function GET(
 
         console.log("Recherche de l'établissement avec ID:", etablissementId)
 
+        // For middleware requests, skip authentication
+        if (!isMiddlewareRequest) {
+            const session = await auth()
+
+            if (!session?.user) {
+                return NextResponse.json({ message: "Non autorisé" }, { status: 401 })
+            }
+
+            // Check if user has permission to access this establishment
+            const user = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                select: { role: true, etablissementId: true }
+            })
+
+            if (!user) {
+                return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+            }
+
+            const isSuperAdmin = user.role === "SUPER_ADMIN"
+            const belongsToEstablishment = user.etablissementId === etablissementId
+
+            if (!isSuperAdmin && !belongsToEstablishment) {
+                return NextResponse.json({
+                    error: "Vous n'avez pas la permission d'accéder à cet établissement"
+                }, { status: 403 })
+            }
+        }
+
         // Récupérer les données de l'établissement depuis la base de données
         const etablissement = await prisma.etablissement.findUnique({
-            where: { id: etablissementId }, // Correction: utiliser id et non etablissementId
+            where: { id: etablissementId },
             select: {
                 id: true,
                 nom: true,
@@ -30,8 +54,6 @@ export async function GET(
                 adresse: true,
                 ville: true,
                 codePostal: true,
-
-                // Vous pouvez ajouter d'autres champs selon votre modèle de données
             },
         })
 
@@ -42,8 +64,12 @@ export async function GET(
 
         console.log("Établissement trouvé:", etablissement.nom)
 
-        // Récupérer des statistiques supplémentaires
-        // Note: Adaptez ces requêtes selon votre modèle de données
+        // For middleware requests, return just the basic establishment info
+        if (isMiddlewareRequest) {
+            return NextResponse.json(etablissement)
+        }
+
+        // For regular requests, include additional statistics
         const elevesCount = await prisma.user.count({
             where: {
                 etablissementId: etablissementId,
@@ -63,8 +89,8 @@ export async function GET(
             stats: {
                 eleves: elevesCount,
                 classes: classesCount,
-                presence: 94.2, // Exemple de valeur statique, à remplacer par une vraie donnée
-                messages: 128, // Exemple de valeur statique, à remplacer par une vraie donnée
+                presence: 94.2,
+                messages: 128,
             },
         }
 

@@ -104,7 +104,7 @@ export default async function middleware(req: NextRequest) {
             if (session && session.user) {
                 // Récupérer les informations de l'utilisateur
                 try {
-                    const userResponse = await fetch(`https://${mainDomain}/api/user?userId=${session.user.id}`, {
+                    const userResponse = await fetch(`https://${mainDomain}/api/user?userId=${session.user.id}&_middleware=true`, {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
@@ -123,8 +123,10 @@ export default async function middleware(req: NextRequest) {
                             console.log("L'utilisateur n'appartient pas à cet établissement, redirection vers son établissement")
 
                             // Récupérer le sous-domaine de l'établissement de l'utilisateur
+                            // In middleware.ts, update the establishment API call
                             const userEstablishmentResponse = await fetch(
-                                `https://${mainDomain}/api/etablissement?id=${userData.etablissementId}`,
+                                // `https://${mainDomain}/api/etablissement?id=${userData.etablissementId}&_middleware=true`,
+                                `https://${mainDomain}/api/etablissement/${userData.etablissementId}?_middleware=true`,
                                 {
                                     method: "GET",
                                     headers: {
@@ -145,7 +147,7 @@ export default async function middleware(req: NextRequest) {
 
                                     // Définir un cookie pour indiquer que nous avons déjà redirigé
                                     redirectResponse.cookies.set("subdomain_redirect", "true", {
-                                        maxAge: 10, // Courte durée de vie (10 secondes)
+                                        maxAge: 3, // Courte durée de vie (10 secondes)
                                         path: "/",
                                         httpOnly: true,
                                         sameSite: "strict",
