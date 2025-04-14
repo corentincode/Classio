@@ -42,28 +42,32 @@ export default async function middleware(req: NextRequest) {
             const now = Date.now()
             let etablissementId = ""
 
-            const apiUrl = `https://${mainDomain}/api/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}`
-
+// Update the API URL in your middleware
+            const apiUrl = `https://${mainDomain}/api/internal/validate-subdomain?domain=${encodeURIComponent(sousDomaine)}&apiKey=${process.env.INTERNAL_API_KEY}`
             console.log("Appel API pour valider le sous-domaine:", apiUrl)
             try {
-                const response = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                })
+                if (session) {
+                    const response = await fetch(apiUrl, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    })
+                    if (response.ok) {
+                        const data = await response.json()
+                        isValid = data.valid
+                        console.log("Réponse API pour", JSON.stringify(data), "- Valide:", isValid)
+                        etablissementId = data.etablissementId || ""
+                        // Mettre en cache le résultat
+                        subdomainCache[sousDomaine] = { valid: isValid, timestamp: now, etablissementId}
 
-                if (response.ok) {
-                    const data = await response.json()
-                    isValid = data.valid
-                    console.log("Réponse API pour", JSON.stringify(data), "- Valide:", isValid)
-                    etablissementId = data.etablissementId || ""
-                    // Mettre en cache le résultat
-                    subdomainCache[sousDomaine] = { valid: isValid, timestamp: now, etablissementId}
-
-                } else {
-                    console.error("Erreur API:", response.status)
+                    } else {
+                        console.error("Erreur API:", response.status)
+                    }
                 }
+
+
+
             } catch (fetchError) {
                 console.error("Erreur lors de l'appel API: ", fetchError)
             }
