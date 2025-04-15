@@ -72,7 +72,7 @@ export default async function middleware(req: NextRequest) {
                 console.log("[MIDDLEWARE] Utilisateur connecté:", session.user.id)
 
                 // Récupérer les informations de l'utilisateur
-                const userResponse = await fetch(`https://${mainDomain}/api/user/${session.user.id}?_middleware=true`, {
+                const userResponse = await fetch(`https://${mainDomain}/api/user?userId=${session.user.id}&_middleware=true`, {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
                     cache: "no-store", // Important: ne pas mettre en cache cette requête
