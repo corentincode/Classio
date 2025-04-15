@@ -29,7 +29,7 @@ export default async function middleware(req: NextRequest) {
                 {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
-                }
+                },
             )
 
             if (!validateResponse.ok) {
@@ -45,19 +45,38 @@ export default async function middleware(req: NextRequest) {
 
             const etablissementId = validateData.etablissementId
 
+            // Récupérer les informations de l'établissement
+            const etablissementResponse = await fetch(
+                `https://${mainDomain}/api/etablissement/${etablissementId}?_middleware=true`,
+                {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    cache: "no-store",
+                },
+            )
+
+            let etablissementData = null
+            if (etablissementResponse.ok) {
+                etablissementData = await etablissementResponse.json()
+                console.log("[MIDDLEWARE] Données établissement:", JSON.stringify(etablissementData))
+                // Ne pas utiliser localStorage ici - c'est côté serveur
+            } else {
+                console.error(
+                    "[MIDDLEWARE] Erreur de récupération des informations établissement:",
+                    etablissementResponse.status,
+                )
+            }
+
             // Si l'utilisateur est connecté
             if (session?.user) {
                 console.log("[MIDDLEWARE] Utilisateur connecté:", session.user.id)
 
                 // Récupérer les informations de l'utilisateur
-                const userResponse = await fetch(
-                    `https://${mainDomain}/api/user/${session.user.id}?_middleware=true`,
-                    {
-                        method: "GET",
-                        headers: { "Content-Type": "application/json" },
-                        cache: "no-store" // Important: ne pas mettre en cache cette requête
-                    }
-                )
+                const userResponse = await fetch(`https://${mainDomain}/api/user/${session.user.id}?_middleware=true`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    cache: "no-store", // Important: ne pas mettre en cache cette requête
+                })
 
                 if (!userResponse.ok) {
                     console.error("[MIDDLEWARE] Erreur de récupération des informations utilisateur:", userResponse.status)
@@ -66,7 +85,15 @@ export default async function middleware(req: NextRequest) {
                         return NextResponse.redirect(`https://${mainDomain}/sign-in`)
                     }
                     // Sinon on continue, mais on log l'erreur
-                    return NextResponse.next()
+                    const response = NextResponse.next()
+                    // Définir le cookie pour le client
+                    response.cookies.set("etablissement_id", etablissementId, {
+                        path: "/",
+                        sameSite: "strict",
+                        secure: process.env.NODE_ENV === "production",
+                        maxAge: 60 * 60 * 24 * 7, // 1 semaine
+                    })
+                    return response
                 }
 
                 const userData = await userResponse.json()
@@ -75,7 +102,16 @@ export default async function middleware(req: NextRequest) {
                 // Vérifier si l'utilisateur est SUPER_ADMIN
                 if (userData.role === "SUPER_ADMIN") {
                     console.log("[MIDDLEWARE] Utilisateur SUPER_ADMIN, accès autorisé")
-                    return NextResponse.next()
+                    // On continue avec les informations de l'établissement déjà récupérées
+                    const response = NextResponse.next()
+                    // Définir le cookie pour le client
+                    response.cookies.set("etablissement_id", etablissementId, {
+                        path: "/",
+                        sameSite: "strict",
+                        secure: process.env.NODE_ENV === "production",
+                        maxAge: 60 * 60 * 24 * 7, // 1 semaine
+                    })
+                    return response
                 }
 
                 // Vérifier si l'utilisateur appartient à cet établissement
@@ -89,19 +125,25 @@ export default async function middleware(req: NextRequest) {
                             {
                                 method: "GET",
                                 headers: { "Content-Type": "application/json" },
-                                cache: "no-store" // Important: ne pas mettre en cache cette requête
-                            }
+                                cache: "no-store", // Important: ne pas mettre en cache cette requête
+                            },
                         )
 
                         if (userEstablishmentResponse.ok) {
                             const userEstablishment = await userEstablishmentResponse.json()
 
                             if (userEstablishment.sousDomaine) {
-                                console.log("[MIDDLEWARE] Redirection vers l'établissement de l'utilisateur:", userEstablishment.sousDomaine)
+                                console.log(
+                                    "[MIDDLEWARE] Redirection vers l'établissement de l'utilisateur:",
+                                    userEstablishment.sousDomaine,
+                                )
                                 return NextResponse.redirect(`https://${userEstablishment.sousDomaine}.${mainDomain}${pathname}`)
                             }
                         } else {
-                            console.error("[MIDDLEWARE] Erreur de récupération de l'établissement de l'utilisateur:", userEstablishmentResponse.status)
+                            console.error(
+                                "[MIDDLEWARE] Erreur de récupération de l'établissement de l'utilisateur:",
+                                userEstablishmentResponse.status,
+                            )
                         }
                     }
 
@@ -119,7 +161,17 @@ export default async function middleware(req: NextRequest) {
             }
 
             // L'utilisateur est autorisé à accéder à cette page
-            return NextResponse.next()
+            const response = NextResponse.next()
+
+            // Définir le cookie pour le client
+            response.cookies.set("etablissement_id", etablissementId, {
+                path: "/",
+                sameSite: "strict",
+                secure: process.env.NODE_ENV === "production",
+                maxAge: 60 * 60 * 24 * 7, // 1 semaine
+            })
+
+            return response
         } catch (error) {
             console.error("[MIDDLEWARE] Erreur:", error)
             // En cas d'erreur, rediriger vers le domaine principal
@@ -129,7 +181,9 @@ export default async function middleware(req: NextRequest) {
         // Nous sommes sur le domaine principal
         // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
         if (!session && !isPublicRoute) {
-            console.log("[MIDDLEWARE] Utilisateur non connecté sur le domaine principal, redirection vers la page de connexion")
+            console.log(
+                "[MIDDLEWARE] Utilisateur non connecté sur le domaine principal, redirection vers la page de connexion",
+            )
             const url = new URL("/sign-in", req.url)
             url.searchParams.set("callbackUrl", encodeURI(pathname))
             return NextResponse.redirect(url)

@@ -51,7 +51,7 @@ export default function DashboardContent() {
   const [activeTab, setActiveTab] = useState("overview")
   const { etablissementId, isLoading, updateEtablissementId, etablissementData } = useLocalStorageEtablissement()
 
-  if (isLoading ) {
+  if (isLoading && !etablissementData) {
     return <div>Chargement...</div>
   }
   return (
@@ -62,7 +62,7 @@ export default function DashboardContent() {
           <div className="flex items-center gap-4 ">
             <SidebarTrigger/>
             <h1 className="text-xl font-bold">Tableau de bord</h1>
-            <strong>{etablissementData.nom || "Non disponible"}</strong>
+            <strong>{etablissementData?.nom || "Non disponible"}</strong>
           </div>
 
           <div className="flex items-center gap-4">
@@ -119,7 +119,7 @@ export default function DashboardContent() {
               <motion.div variants={fadeIn}>
                 <StatsCard
                   title="Élèves"
-                  value={etablissementData.stats.eleves}
+                  value={etablissementData?.stats.eleves}
                   change="+2.5%"
                   trend="up"
                   icon={<Users className="h-5 w-5 text-[#c83e3e]" />}
@@ -129,7 +129,7 @@ export default function DashboardContent() {
               <motion.div variants={fadeIn}>
                 <StatsCard
                   title="Classes"
-                  value={etablissementData.stats.classes}
+                  value={etablissementData?.stats.classes}
                   change="0%"
                   trend="neutral"
                   icon={<BookOpen className="h-5 w-5 text-[#c83e3e]" />}
