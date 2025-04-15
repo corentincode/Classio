@@ -27,14 +27,14 @@ export function useLocalStorageEtablissement() {
             }
 
             // Sinon, récupérer les données depuis l'API
-            const response = await fetch(`/api/etablissement/${id}/`)
+            const response = await fetch(`https://julianmayer.fr/api/etablissement/${id}/`)
 
             if (!response.ok) {
                 throw new Error(`Erreur lors de la récupération des données: ${response.status}`)
             }
 
             const data = await response.json()
-
+            console.log('[HOOK] etablissement_data', JSON.stringify(data) )
             // Mettre en cache les données
             localStorage.setItem(`etablissement_data_${id}`, JSON.stringify(data))
             localStorage.setItem(`etablissement_data_timestamp_${id}`, Date.now().toString())
